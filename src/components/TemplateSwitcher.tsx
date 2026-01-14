@@ -2,7 +2,9 @@ import React from "react";
 import type { ResumeData } from "../types";
 import A4Preview from "./A4Preview";
 
-export type TemplateType = "simple" | "professional" | "creative";
+export type TemplateType = 
+  | "simple" | "professional" | "creative"
+  | "modern" | "minimal" | "executive" | "academic" | "technical" | "portfolio" | "bold" | "clean" | "compact" | "elegant" | "classic" | "stylish" | "fresh" | "sharp" | "zen" | "focus" | "vivid" | "sleek" | "smart" | "dynamic" | "elite";
 
 type TemplateSwitcherProps = {
   selected: TemplateType;
@@ -41,45 +43,30 @@ const TemplateSwitcher: React.FC<TemplateSwitcherProps> = ({
     };
   };
 
+  const allTemplates: TemplateType[] = [
+    "simple", "professional", "creative", "modern", "minimal", "executive", "academic", "technical",
+    "portfolio", "bold", "clean", "compact", "elegant", "classic", "stylish", "fresh", "sharp",
+    "zen", "focus", "vivid", "sleek", "smart", "dynamic", "elite"
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onChange("simple")}
-          className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-            selected === "simple"
-              ? "text-white shadow-sm"
-              : "bg-dark-card text-gray-300 border border-dark-border hover:bg-dark-surface hover:text-white"
-          }`}
-          style={getButtonStyle(selected === "simple")}
-        >
-          Simple
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange("professional")}
-          className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-            selected === "professional"
-              ? "text-white shadow-sm"
-              : "bg-dark-card text-gray-300 border border-dark-border hover:bg-dark-surface hover:text-white"
-          }`}
-          style={getButtonStyle(selected === "professional")}
-        >
-          Professional
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange("creative")}
-          className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-            selected === "creative"
-              ? "text-white shadow-sm"
-              : "bg-dark-card text-gray-300 border border-dark-border hover:bg-dark-surface hover:text-white"
-          }`}
-          style={getButtonStyle(selected === "creative")}
-        >
-          Creative
-        </button>
+      <div className={`grid gap-2 ${previewOnly ? 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-6'} max-h-48 overflow-y-auto pr-1`}>
+        {allTemplates.map((tpl) => (
+          <button
+            key={tpl}
+            type="button"
+            onClick={() => onChange(tpl)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              selected === tpl
+                ? "text-white shadow-sm"
+                : "bg-dark-card text-gray-300 border border-dark-border hover:bg-dark-surface hover:text-white"
+            }`}
+            style={getButtonStyle(selected === tpl)}
+          >
+            {tpl.charAt(0).toUpperCase() + tpl.slice(1)}
+          </button>
+        ))}
       </div>
 
       <div className="print-area">
@@ -125,10 +112,10 @@ const SimpleTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
                   <div className="text-xs text-slate-600">{exp.company}</div>
                 </div>
                 <div className="text-[10px] text-slate-500 mb-0.5">
-                  {exp.startDate} - {exp.endDate || "Present"}
+                  {exp.from} - {exp.to || "Present"}
                 </div>
               </div>
-              <p className="text-xs text-slate-600 mt-1">{exp.description}</p>
+              <p className="text-xs text-slate-600 mt-1">{exp.desc}</p>
             </div>
           ))}
         </section>
@@ -140,7 +127,7 @@ const SimpleTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
           {resume.education.map((edu, idx) => (
             <div key={idx} className="mb-2">
               <div className="font-semibold text-sm">{edu.degree}</div>
-              <div className="text-xs text-slate-600">{edu.school}</div>
+              <div className="text-xs text-slate-600">{edu.college}</div>
               <div className="text-[10px] text-slate-500">{edu.year}</div>
             </div>
           ))}
@@ -200,10 +187,10 @@ const ProfessionalTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
                     <div className="text-xs text-slate-600">{exp.company}</div>
                   </div>
                   <span className="text-[10px] text-slate-500">
-                    {exp.startDate} - {exp.endDate || "Present"}
+                    {exp.from} - {exp.to || "Present"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600">{exp.description}</p>
+                <p className="text-xs text-slate-600">{exp.desc}</p>
               </div>
             ))}
           </section>
@@ -217,7 +204,7 @@ const ProfessionalTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
             {resume.education.map((edu, idx) => (
               <div key={idx} className="mb-3">
                 <div className="font-semibold">{edu.degree}</div>
-                <div className="text-xs text-slate-600">{edu.school}</div>
+                <div className="text-xs text-slate-600">{edu.college}</div>
                 <span className="text-[10px] text-slate-500">{edu.year}</span>
               </div>
             ))}
@@ -258,9 +245,9 @@ const CreativeTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
                   {exp.title} at {exp.company}
                 </div>
                 <div className="text-[10px] text-slate-500">
-                  {exp.startDate} - {exp.endDate || "Present"}
+                  {exp.from} - {exp.to || "Present"}
                 </div>
-                <p className="text-xs text-slate-600 mt-1">{exp.description}</p>
+                <p className="text-xs text-slate-600 mt-1">{exp.desc}</p>
               </div>
             ))}
           </section>
@@ -276,7 +263,7 @@ const CreativeTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
                 <div className="font-semibold text-slate-800">
                   {edu.degree}
                 </div>
-                <div className="text-[11px] text-slate-600">{edu.school}</div>
+                <div className="text-[11px] text-slate-600">{edu.college}</div>
                 <div className="text-[10px] text-slate-500">{edu.year}</div>
               </div>
             ))}

@@ -27,9 +27,9 @@ const EmailSignUp: React.FC<EmailSignUpProps> = ({ onSuccess }) => {
       }
       // Redirect to dashboard
       if (window.location.pathname === '/') {
-        window.location.href = '/dashboard';
+        window.location.href = '/';
       } else {
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (err: any) {
       setError(err.message || 'Registration failed');

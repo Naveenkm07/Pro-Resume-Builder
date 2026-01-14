@@ -30,8 +30,8 @@ const AuthCallback: React.FC = () => {
         // Exchange code for token
         await AuthService.handleCallback(code);
 
-        // Redirect to dashboard
-        navigate('/dashboard');
+        // Redirect to main app route
+        navigate('/');
       } catch (err: any) {
         setError(err.message || 'Authentication failed');
         setLoading(false);

@@ -20,6 +20,14 @@ export interface AuthResponse {
  * Handles Google OAuth and JWT token management
  */
 class AuthService {
+  private getAuthHeaders() {
+    const token = this.getToken();
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }
+
   /**
    * Initiate Google OAuth login
    * Redirects user to Google OAuth consent screen
@@ -182,6 +190,38 @@ class AuthService {
       return response.data;
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Login failed';
+      throw new Error(errorMessage);
+    }
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    try {
+      const response = await axios.post<{ message: string }>(
+        `${API_URL}/api/auth/change-password`,
+        { currentPassword, newPassword },
+        { headers: this.getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to change password';
+      throw new Error(errorMessage);
+    }
+  }
+
+  async deleteAccount(password?: string): Promise<{ message: string }> {
+    try {
+      const response = await axios.delete<{ message: string }>(
+        `${API_URL}/api/auth/me`,
+        {
+          headers: this.getAuthHeaders(),
+          data: password ? { password } : {},
+        }
+      );
+      this.logout();
+      window.dispatchEvent(new Event('authUpdate'));
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Failed to delete account';
       throw new Error(errorMessage);
     }
   }

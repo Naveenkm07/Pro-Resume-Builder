@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRY = process.env.JWT_EXPIRY || '15m'; // Short-lived token
+const JWT_EXPIRY: StringValue = (process.env.JWT_EXPIRY as StringValue | undefined) ?? ('15m' as const); // Short-lived token
 
 export interface JWTPayload {
   userId: string;

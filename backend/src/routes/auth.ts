@@ -4,6 +4,8 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
+import Resume from '../models/Resume';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -330,6 +332,95 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     } else {
       res.status(500).json({ error: 'Failed to fetch user' });
     }
+  }
+});
+
+router.post('/change-password', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword?: string;
+      newPassword?: string;
+    };
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: 'Current password and new password are required' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return;
+    }
+
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    if (!user.password) {
+      res.status(400).json({ error: 'This account was created with Google. Password cannot be changed.' });
+      return;
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      res.status(401).json({ error: 'Current password is incorrect' });
+      return;
+    }
+
+    const saltRounds = 10;
+    user.password = await bcrypt.hash(newPassword, saltRounds);
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+router.delete('/me', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const { password } = req.body as { password?: string };
+    if (user.password) {
+      if (!password) {
+        res.status(400).json({ error: 'Password is required to delete this account' });
+        return;
+      }
+
+      const ok = await bcrypt.compare(password, user.password);
+      if (!ok) {
+        res.status(401).json({ error: 'Password is incorrect' });
+        return;
+      }
+    }
+
+    await Resume.deleteMany({ user: user._id });
+    await User.deleteOne({ _id: user._id });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ error: 'Failed to delete account' });
   }
 });
 

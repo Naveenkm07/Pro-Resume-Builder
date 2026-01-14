@@ -26,9 +26,9 @@ const EmailSignIn: React.FC<EmailSignInProps> = ({ onSuccess }) => {
       }
       // Redirect to dashboard
       if (window.location.pathname === '/') {
-        window.location.href = '/dashboard';
+        window.location.href = '/';
       } else {
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (err: any) {
       setError(err.message || 'Login failed');
