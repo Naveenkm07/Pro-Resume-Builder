@@ -17,11 +17,17 @@ import ContactPage from "./pages/ContactPage";
 import { useAuth } from "./contexts/AuthContext";
 import { ApiService } from "./services/api";
 import { tailorResumeForRole, ROLE_TEMPLATES, type RoleTemplateId } from "./services/tailoring";
+import ExportWizard from "./components/ExportWizard";
 
 const AppContent: React.FC = () => {
   const [resume, setResume] = useState<ResumeData>(SAMPLE_RESUME);
   const [resumeVersions, setResumeVersions] = useState<ResumeData[]>([]);
   const [activeVersionName, setActiveVersionName] = useState<string>('Base');
+  const [showExportWizard, setShowExportWizard] = useState(false);
+  const [optimizeLayoutOrder, setOptimizeLayoutOrder] = useState(() => {
+    const raw = localStorage.getItem("optimizeLayoutOrder");
+    return raw ? raw === "true" : false;
+  });
   const [template, setTemplate] = useState<TemplateType>(() => {
     const rememberLast = localStorage.getItem("rememberLastTemplate") === "true";
     if (rememberLast) {
@@ -38,12 +44,33 @@ const AppContent: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
   const [showLanding, setShowLanding] = useState(!user);
+  
+  // PDF export options state
+  const [pageSize, setPageSize] = useState<"A4" | "Letter">(() => {
+    const raw = localStorage.getItem("pdfPageSize");
+    return raw === "Letter" ? "Letter" : "A4";
+  });
+  const [marginMm, setMarginMm] = useState(() => {
+    const raw = localStorage.getItem("pdfMarginMm");
+    const parsed = raw ? Number(raw) : 15;
+    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 50 ? parsed : 15;
+  });
+  const [scalePercent, setScalePercent] = useState(() => {
+    const raw = localStorage.getItem("pdfScalePercent");
+    const parsed = raw ? Number(raw) : 100;
+    return Number.isFinite(parsed) && parsed >= 50 && parsed <= 150 ? parsed : 100;
+  });
 
   const handleResumeChange = (updatedResume: ResumeData) => {
     setResume(updatedResume);
     setResumeVersions(prev => prev.map(v => 
       v.versionName === activeVersionName ? { ...updatedResume, versionName: activeVersionName } : v
     ));
+  };
+
+  const handleOptimizeLayoutOrderChange = (enabled: boolean) => {
+    setOptimizeLayoutOrder(enabled);
+    localStorage.setItem("optimizeLayoutOrder", String(enabled));
   };
 
   const handleVersionSwitch = (versionName: string) => {
@@ -127,7 +154,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleExport = () => {
-    window.print();
+    setShowExportWizard(true);
   };
 
   const handleSave = async () => {
@@ -209,6 +236,8 @@ const AppContent: React.FC = () => {
                   activeSection={activeSection}
                   template={template}
                   onTemplateChange={setTemplate}
+                  optimizeLayoutOrder={optimizeLayoutOrder}
+                  onOptimizeLayoutOrderChange={handleOptimizeLayoutOrderChange}
                 />
               </div>
 
@@ -217,6 +246,8 @@ const AppContent: React.FC = () => {
                   resume={resume}
                   template={template}
                   onTemplateChange={setTemplate}
+                  optimizeLayoutOrder={optimizeLayoutOrder}
+                  onOptimizeLayoutOrderChange={handleOptimizeLayoutOrderChange}
                 />
               </div>
             </div>
@@ -224,34 +255,18 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      <div className="fixed bottom-3 right-4 text-[11px] text-gray-400">
-        <div className="border-t border-gray-700 mb-1" />
-        <div className="flex flex-wrap gap-3 justify-end text-xs">
-          <Link
-            to="/terms"
-            className="font-semibold text-gray-200 hover:underline"
-          >
-            Terms
-          </Link>
-          <span className="text-gray-500">|</span>
-          <Link
-            to="/privacy"
-            className="font-semibold text-gray-200 hover:underline"
-          >
-            Privacy policy
-          </Link>
-          <span className="text-gray-500">|</span>
-          <Link
-            to="/contact"
-            className="font-semibold text-gray-200 hover:underline"
-          >
-            Contact us
-          </Link>
-        </div>
-        <div className="mt-1 text-[10px] text-gray-500">
-          a9 2026 Pro Resume Builder. All rights reserved.
-        </div>
-      </div>
+      {/* Export Wizard */}
+      <ExportWizard
+        isOpen={showExportWizard}
+        onClose={() => setShowExportWizard(false)}
+        resume={resume}
+        pageSize={pageSize}
+        marginMm={marginMm}
+        scalePercent={scalePercent}
+        onPageSizeChange={setPageSize}
+        onMarginChange={setMarginMm}
+        onScaleChange={setScalePercent}
+      />
     </div>
   );
 };

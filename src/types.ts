@@ -19,6 +19,14 @@ export type Project = {
   link?: string;
 };
 
+export type Certification = {
+  name: string;
+  issuer?: string;
+  date?: string;
+  credentialId?: string;
+  url?: string;
+};
+
 export type ResumeData = {
   name: string;
   contact: string;
@@ -27,6 +35,7 @@ export type ResumeData = {
   experience: Experience[];
   education: Education[];
   projects: Project[];
+  certifications?: Certification[];
   versionName?: string;
   sectionOrder?: string[];
 };
@@ -80,5 +89,6 @@ export const SAMPLE_RESUME: ResumeData = {
       link: "https://github.com/Naveenkm07/PersonalDataManager-ADV",
     },
   ],
+  certifications: [],
   versionName: 'Base',
 };

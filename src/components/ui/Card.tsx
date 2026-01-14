@@ -12,7 +12,7 @@ const Card: React.FC<CardProps> = ({ children, className = "", glow = false, onC
   
   return (
     <div
-      className={`glass rounded-xl p-6 transition-all duration-300 ${glowClass} ${
+      className={`rounded-xl p-6 transition-all duration-300 bg-card border border-border ${glowClass} ${
         onClick ? "cursor-pointer hover:scale-[1.02]" : ""
       } ${className}`}
       onClick={onClick}

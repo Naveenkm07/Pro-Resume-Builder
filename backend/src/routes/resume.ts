@@ -80,6 +80,7 @@ router.post('/', async (req: any, res) => {
             experience,
             education,
             projects,
+            certifications,
         } = req.body;
 
         const versionName = typeof rawVersionName === 'string' && rawVersionName.trim() ? rawVersionName.trim() : 'Base';
@@ -103,6 +104,7 @@ router.post('/', async (req: any, res) => {
             resume.experience = experience;
             resume.education = education;
             resume.projects = projects;
+            resume.certifications = Array.isArray(certifications) ? certifications : resume.certifications;
             await resume.save();
         } else {
             // Create new
@@ -117,6 +119,7 @@ router.post('/', async (req: any, res) => {
                 experience,
                 education,
                 projects,
+                certifications: Array.isArray(certifications) ? certifications : [],
             });
             await resume.save();
         }

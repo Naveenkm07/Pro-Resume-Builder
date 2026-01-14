@@ -13,6 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
     { id: "edit", label: "Edit Content", icon: "✏️" },
     { id: "templates", label: "Templates", icon: "🎨" },
     { id: "job-match", label: "Job Match", icon: "🎯" },
+    { id: "multi-job-match", label: "Multi Job Match", icon: "📊" },
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
 

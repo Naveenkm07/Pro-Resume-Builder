@@ -15,7 +15,11 @@ export type ColorTheme =
   | 'rose' 
   | 'violet'
   | 'teal'
-  | 'lime';
+  | 'lime'
+  | 'sky'
+  | 'fuchsia'
+  | 'slate'
+  | 'gold';
 
 interface ThemeContextType {
   theme: Theme;
@@ -41,6 +45,10 @@ const colorThemes: Record<ColorTheme, { primary: string; secondary: string; acce
   violet: { primary: '#8b5cf6', secondary: '#7c3aed', accent: '#a78bfa' },
   teal: { primary: '#14b8a6', secondary: '#0d9488', accent: '#2dd4bf' },
   lime: { primary: '#84cc16', secondary: '#65a30d', accent: '#a3e635' },
+  sky: { primary: '#0ea5e9', secondary: '#0284c7', accent: '#38bdf8' },
+  fuchsia: { primary: '#d946ef', secondary: '#c026d3', accent: '#e879f9' },
+  slate: { primary: '#64748b', secondary: '#475569', accent: '#94a3b8' },
+  gold: { primary: '#eab308', secondary: '#ca8a04', accent: '#facc15' },
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

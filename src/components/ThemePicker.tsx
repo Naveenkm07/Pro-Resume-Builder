@@ -52,7 +52,13 @@ const ThemePicker: React.FC = () => {
     { name: 'violet', label: 'Violet', icon: '💜' },
     { name: 'teal', label: 'Teal', icon: '🩵' },
     { name: 'lime', label: 'Lime', icon: '💚' },
+    { name: 'sky', label: 'Sky', icon: '🩵' },
+    { name: 'fuchsia', label: 'Fuchsia', icon: '🩷' },
+    { name: 'slate', label: 'Slate', icon: '🩶' },
+    { name: 'gold', label: 'Gold', icon: '💛' },
   ];
+
+  const selectedThemeLabel = themeColors.find((t) => t.name === colorTheme)?.label ?? colorTheme;
 
   return (
     <div className="relative">
@@ -89,38 +95,43 @@ const ThemePicker: React.FC = () => {
             >
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-white mb-3">Color Theme</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {themeColors.map(({ name, label, icon }) => (
-                    <button
-                      key={name}
-                      onClick={() => {
-                        setColorTheme(name);
-                        setIsOpen(false);
-                      }}
-                      className={`relative p-3 rounded-lg border-2 transition-all group ${
-                        colorTheme === name
-                          ? 'border-white shadow-glow-purple'
-                          : 'border-dark-border hover:border-gray-500'
-                      }`}
-                      style={{
-                        backgroundColor: colorThemes[name].primary + '20',
-                      }}
-                      title={label}
-                    >
-                      <div
-                        className="w-full h-8 rounded mb-1 transition-transform group-hover:scale-110"
-                        style={{ backgroundColor: colorThemes[name].primary }}
-                      />
-                      <div className="text-xs text-gray-300 text-center">{icon}</div>
-                      {colorTheme === name && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-dark-bg" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                <div className="text-[11px] text-gray-300 mb-3">
+                  Current: <span className="font-semibold text-white">{selectedThemeLabel}</span>
+                </div>
+                <div className="max-h-64 overflow-auto pr-1">
+                  <div className="grid grid-cols-4 gap-2">
+                    {themeColors.map(({ name, label, icon }) => (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          setColorTheme(name);
+                          setIsOpen(false);
+                        }}
+                        className={`relative p-3 rounded-lg border-2 transition-all group ${
+                          colorTheme === name
+                            ? 'border-white shadow-glow-purple'
+                            : 'border-dark-border hover:border-gray-500'
+                        }`}
+                        style={{
+                          backgroundColor: colorThemes[name].primary + '20',
+                        }}
+                        title={label}
+                      >
+                        <div
+                          className="w-full h-8 rounded mb-1 transition-transform group-hover:scale-110"
+                          style={{ backgroundColor: colorThemes[name].primary }}
+                        />
+                        <div className="text-xs text-gray-300 text-center">{icon}</div>
+                        {colorTheme === name && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-dark-bg" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

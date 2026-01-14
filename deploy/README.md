@@ -1,6 +1,6 @@
 # Deployment Guide - EC2 Single Instance
 
-This guide describes how to deploy the Resume Builder MVP to a single EC2 instance using Docker Compose.
+This guide describes how to deploy the Resume Builder Pro to a single EC2 instance using Docker Compose.
 
 ## Prerequisites
 

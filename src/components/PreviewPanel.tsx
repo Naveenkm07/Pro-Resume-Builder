@@ -4,18 +4,27 @@ import { TemplateType } from "./TemplateSwitcher";
 import A4Preview from "./A4Preview";
 import TemplateSwitcher from "./TemplateSwitcher";
 import Button from "./ui/Button";
+import { getOptimizedSectionOrder } from "../services/sectionOrderOptimizer";
 
 type PreviewPanelProps = {
   resume: ResumeData;
   template: TemplateType;
   onTemplateChange: (template: TemplateType) => void;
+  optimizeLayoutOrder: boolean;
+  onOptimizeLayoutOrderChange: (enabled: boolean) => void;
 };
 
 const PreviewPanel: React.FC<PreviewPanelProps> = ({
   resume,
   template,
   onTemplateChange,
+  optimizeLayoutOrder,
+  onOptimizeLayoutOrderChange,
 }) => {
+  const effectiveSectionOrder = optimizeLayoutOrder
+    ? getOptimizedSectionOrder(resume)
+    : resume.sectionOrder;
+
   return (
     <div className="h-full overflow-y-auto bg-dark-bg relative">
       {/* Spotlight effect background */}
@@ -27,19 +36,30 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
             <h2 className="text-xl font-bold text-white mb-1">Live Preview</h2>
             <p className="text-xs text-gray-300">A4 format • Print-ready</p>
           </div>
-          <div className="flex gap-2">
-            {(["simple", "professional", "creative"] as TemplateType[]).map((t) => (
-              <Button
-                key={t}
-                variant={template === t ? "primary" : "secondary"}
-                size="sm"
-                glow={template === t ? "purple" : undefined}
-                onClick={() => onTemplateChange(t)}
-                className="capitalize"
-              >
-                {t}
-              </Button>
-            ))}
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
+              {(["simple", "professional", "creative"] as TemplateType[]).map((t) => (
+                <Button
+                  key={t}
+                  variant={template === t ? "primary" : "secondary"}
+                  size="sm"
+                  glow={template === t ? "purple" : undefined}
+                  onClick={() => onTemplateChange(t)}
+                  className="capitalize"
+                >
+                  {t}
+                </Button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-xs text-gray-300">
+              <input
+                type="checkbox"
+                checked={optimizeLayoutOrder}
+                onChange={(e) => onOptimizeLayoutOrderChange(e.target.checked)}
+                className="rounded border-dark-border bg-dark-card text-primary focus:ring-primary"
+              />
+              Optimize layout order
+            </label>
           </div>
         </div>
       </div>
@@ -54,7 +74,7 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
                   onChange={onTemplateChange}
                   resume={resume}
                   previewOnly
-                  sectionOrder={resume.sectionOrder}
+                  sectionOrder={effectiveSectionOrder}
                 />
               </div>
             </A4Preview>

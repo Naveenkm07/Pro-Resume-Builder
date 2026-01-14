@@ -1,7 +1,7 @@
 import type { ResumeData } from "../types";
 import { ROLE_TEMPLATES, type RoleTemplateId } from "./tailoring";
 
-export type ResumeSectionId = "summary" | "skills" | "projects" | "experience" | "education";
+export type ResumeSectionId = "summary" | "skills" | "projects" | "experience" | "education" | "certifications";
 
 const DEFAULT_SECTION_ORDER: ResumeSectionId[] = [
   "summary",
@@ -9,6 +9,7 @@ const DEFAULT_SECTION_ORDER: ResumeSectionId[] = [
   "experience",
   "projects",
   "education",
+  "certifications",
 ];
 
 function uniq<T>(items: T[]): T[] {
@@ -30,6 +31,7 @@ function normalizeSectionOrder(order: string[] | undefined): ResumeSectionId[] {
     "projects",
     "experience",
     "education",
+    "certifications",
   ];
 
   const filtered = uniq(

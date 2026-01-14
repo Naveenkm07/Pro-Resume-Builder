@@ -26,6 +26,13 @@ export interface IResume extends Document {
         techStack?: string;
         link?: string;
     }>;
+    certifications?: Array<{
+        name: string;
+        issuer?: string;
+        date?: string;
+        credentialId?: string;
+        url?: string;
+    }>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -66,6 +73,15 @@ const ResumeSchema: Schema = new Schema(
                 description: { type: String, default: '' },
                 techStack: { type: String, default: '' },
                 link: { type: String, default: '' },
+            },
+        ],
+        certifications: [
+            {
+                name: { type: String, default: '' },
+                issuer: { type: String, default: '' },
+                date: { type: String, default: '' },
+                credentialId: { type: String, default: '' },
+                url: { type: String, default: '' },
             },
         ],
     },

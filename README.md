@@ -1,187 +1,231 @@
-🚀 Pro 
+# Pro Resume Builder
 
->**Craftstunning, profssionl resumes in minueswithAI-powered nsighs and modrndesign**
+A modern resume builder with a clean editor experience, multi-format resume upload, and an API-backed data model you can persist per user.
 
-[![License:MI](https://img.shields.io/badge/License-MIT-ellow.svg)](htts://opnsource.org/licenses/MIT)
-[![Type](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white](https://www.typescriptlang.org/)[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactjs.org/)[![Tailwind CS](https://mg.shields.io/badge/Tailwid_CSS-38B2AC?style=flat-square&loo=taiwind-css&logoColor=whit)](https://tailwindcss.com/)
-
-## ✨ Features
-
-### 🎯 Smart Resume Builder
- **AI-Powered Suggestions**: Intelligent autocomlete for skills nd technolois
--**Bullet Impact Scoing**: Ral-time analyis of resllet ponts with actionab impovementsuggestions
-- **Template Variety**: ultiple professional templates modern,cean designs
-- **Lve Preiw**: Instant-formatted as you type
-
-### 📄 Smart Parser 2.0
-- **Multi-Format Support**: Upload PDF, DOCX, HTML, RTF, and TXT files
-- **Intelligent Extraction**: Automatically parses experience, education, projects, links, certifications
-- **Visual Comparison**:ide-by-side view ofpars results vs original text
-- **Quick-Fix Interface**: One-clck correcions for mapp errors# 🎨 Modern UI/UX
-- **Responsive Design**: Works flawlessly on desktop, tablet, and mobile
-- **Dark/Lighthemes**: Beautiful theme switcher with system preference dettion
-- **Smoot Animations**: Lottieanimation and micro-inerctions
-- **Accessibility First**: WCAG ompliant with eyboard navigation
-### 🔐 Authentication & Security **OAuth Integration**:Googl and GitHub uthentiaion
-- **SecureStorage**:Encrted data storag and transmission
-- **ession Management**: Persistent login with automati token efresh
-
-### 🚀 Performance
-- **Lghtning Fast**: Oimizedbuild with  and React 19**Docker dy**: Complete onainerizeddeplyment
--**MicrsevicesArchitectue**:calable backend with dedicated servces
-
-## 🛠️ Tech Stack
-
-### Frontn
--**Ract 19** - Moern React wth latest feaures
-- **TypeScrpt** - Type-safe developmet**** -Utility-ist- **React Router** - Client-side routing- **React Hook Form** - Form management
-- **Axios** - HTTP client
-- **Lottie React** - Animations
-
-#Backnd
-- **Node.js** - Runme evironment
--**Expres** - Web framework
-- **Docker** - Conineizaion
-- **Nginx** - Revers proxy
-### Services-Pytho Parser** - Resume paring with AI
-- **Puppeeer Renderer** - PDF genertion
-- **File Upoad** - Muti-format support
-
-## 🚀 Quick Start
-
-###Prrquisites
-- No.js 18+
-- Doker & Docker Compose
-- Gt
-
-### Installation
-
-1. **Clon the repoitorygit cloehttps://gthub.com/youruserame/pro-reume-builder.gi
-   cd pro-resume-buiderEnvionmenStupc env.exaple.ev
-  # Eit .n with your configuration**Docker Deloym(ecmmeded)**
- ```bas
-  dock-coposep -d
-   ```
-   
-   🎉 **Acces the ppat 000**
-
-4 **Local Development**   ```bash   Intll dependencis
-   npm install      # Startdevepmentervr
-   npm rundv
-   
-   #Bild for ruction
-  nm ru buid
-   ```
-
-## 📁ProjcStruture
-
-```
-pr-rese-builder/
-├── src/                    # React frontedsurce
-│   ├──component/         # Rusab UI omponens
-│   ├──pges/             #agecompnents
-│   ├── sevices/          #APIservces
-│   ├── contxts/         #Reactcontexts│ └── typs.ts         # TyeScritdefinition
-├── back/               # Node.jAPI server
-├── prse-service/       # Pyhnresume parser
-├── renderer              # PDF genertion service
-├── ortfolo            # Portfoi showcse
-└── eploy/               # Deployment configurations
-``
-
-##🔧 Confguraion
-
-###Environen Varbles
-```env
-# Fonend
-VITE_API_URL=http:/lcalhost:3001
-
-# Backend
-NODE_ENV=developent
-PARSER_SERVICE_URL=http://prser:8000
-
-# OAuh(Optionl)
-GOOGLE_CLIENT_ID=your_google_cliet_i
-GITHUB_CLIENT_ID=your_giub_clit_id
-```
-##🎯Uage Guide
-
-### Creating Yur Reume
-1.Start fro Scrath**:Uthetuiivbudr
-2. **Upload Existing**: Import yourcurren resum (PDF/DOCX)
-3. **AIEnhnemt**: Get smartsuggeston forimprovemes
-4.**Peviw & Export**: Downlo as PDF in multiple formats
-### Advanced FeaturesSkll Auocomplete**:MRU-basedsuggestionsor common tch skil-**ImpactScoring**:Optimizbulltpomxium impact
-- TemplateSwitching: Try different layuts isnly
-- Real-timeValidation: Catch error before export
-
-## 🤝 Contribting
-
-We welcoe contibutions!Plese see our [Cotributing Guie](CONTRIBUTING.md)for deta
-###DevelopmentWorkflow
-1.Fokth reposory
-2.Creaafatrbranch(`gi chckou -b fetue/amazing-fture`)
-3.Comit yor change (`git commi -m'Addamzngfeature'`4.Pushtot branch (`gitush origin featu/amazng-featur`)
-5.Oen  Pull Requt
-
-## 📝 APIDocumentato
-
-###Co Endpoints
-- `POST /p/resue/creat`-Crenewesue`POS /api/rsue/upload` - Uoad and prse resum
-- `GET/api/reume/:d` - Fe resume data
-- `POST /api/resume/xport` - Expot to PDF
-
-###Authenticatio
-- `GET/au/googl`-Goge OAth
--`GET /auth/gub`- GitHu OAuh
-- `POST /auth/rfrsh` - Refresh toke
-
-##🐳 Docker ervcs
-|Service| rt | Dcrpti|
-|---------|------|-------------|
-| Froten| 3000 | Rc applcation |
-| API | 3001 | Nod.jsbackend |
-| Parser | 8000 | Pyhon rsue rer|
-|Rer| 4000 | PDF generato |
-
-## 🧪 Tetng
-
-```bash
-# Run fronten tsts
-npmtest
-
-# Run bcked testscdbackend&& npm tet
-
-# Run parsr tests
-cparse-servie && pyth -m pyest
-```
-
-## 📊 Performc
-
--**LighthouseScore**:5+ Perforance- **Bundle Size**: < 200KB gzippedFist Contentful Pa< 1.5s
-- **TmeoInteractive: < 2s
-
-## 🔒 Secuy
-
-- HTTPSOnly**: Prodcieforcesscureconnctions
-- **CORS Configure**: Propcross-originpolicies-**InputValdation**:Cmrheivesaniization
-- **RatLimiting**: API ptctionagas abuse
-
-## 🌟Roamp
-
-- [ ]**AIIn Coach**:Pactic itviews with AI
-- [ ] **ResumAnlytic**:Trckresumeerformnce mtrics- [ ]**TeamCollaborato**:Shrd eitresuesaaam
-- [ ] **ATSOtimization**: Adancdapplicnt tacking systm comptibility
-- [ ]**Vdeo Resume**:Suport fo multimeda cont 📄Liens
-
-This rojec is licensed uder the MIT Liense - sete [LICENSE](LICENSE) file for dtails.
-
-## 🙏 Anowledgment**RectTem**-Fr amazingfraewr
--**TilwinCS** -For utility-first CSSramewk**Ve** - Forblazig fstbu tool
--**OnAI** -ForI-owedfeures**ommunty Cotbuors -Fr makigis projctett
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=flat-square&logo=express&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 
 ---
 
-<divalgn="ceer">
- <p>Mae❤️b he  uilder Team</p>
-  <p>⭐ Star this repo if it helped you bd your ram esume!</p></div>
+## Highlights
+
+- **Resume editor + live preview**: Build a structured resume (summary, skills, experience, education, projects, certifications).
+- **Smart upload parsing**: Upload `PDF/DOC/DOCX/HTML/RTF/TXT` and review extracted text + mapped fields.
+- **Projects extractor**: Convert a raw “Projects” section into a structured list via an API helper.
+- **Brand analyzer**: Score role alignment against job keywords and suggest what to add/emphasize.
+- **Bullet impact scoring**: Heuristic scoring + one-click suggestions for stronger action/metrics.
+- **STAR answer scorer**: Quick feedback for interview practice (Situation/Task/Action/Result coverage).
+- **Authentication**: Email/password + Google OAuth (JWT-based API auth).
+
+---
+
+## Tech Stack
+
+### Frontend
+
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Axios
+
+### Backend API
+
+- Node.js + Express
+- MongoDB (Mongoose)
+- JWT auth
+- Multer uploads + local text extraction (PDF, DOCX, HTML/RTF/TXT)
+
+### Services (optional / microservices)
+
+- `parse-service` (FastAPI): parsing + (optional) LLM-based optimization
+- `renderer` (Node + Puppeteer): HTML-to-PDF rendering service
+- Nginx: serves the built frontend and proxies `/api` to the backend in Docker
+
+---
+
+## Architecture
+
+```text
+Browser
+  │
+  │  (Vite dev server or Nginx)
+  ▼
+Frontend (React)
+  │
+  │  /api/*
+  ▼
+Backend API (Express, :3001) ────────────┐
+  │                                      │
+  │ persists                             │ optional
+  ▼                                      ▼
+MongoDB                              Parser (:8000) / Renderer (:4000)
+```
+
+Notes:
+
+- In local dev, Vite proxies `/api` requests to `http://localhost:3001`.
+- In Docker, Nginx (frontend) proxies `/api` to the `api` container.
+
+---
+
+## Project Structure
+
+```text
+.
+├─ src/                   # Frontend (React)
+├─ backend/               # Backend API (Express + TS)
+├─ parse-service/         # FastAPI resume parser/optimizer
+├─ renderer/              # Puppeteer PDF renderer service
+├─ docker-compose.yml     # Full stack orchestration
+├─ Dockerfile.frontend    # Builds + serves frontend via Nginx
+└─ nginx.conf             # Nginx config (SPA routing + /api proxy)
+```
+
+---
+
+## Quick Start (Recommended): Docker
+
+Prerequisites:
+
+- Node.js 18+ (for non-Docker dev)
+- Docker + Docker Compose
+
+1) Create environment files:
+
+- `env.example` → `.env`
+- `backend/env.example` → `backend/.env`
+
+2) Start everything:
+
+```bash
+docker compose up --build
+```
+
+Services:
+
+- Frontend: `http://localhost:3000`
+- API: `http://localhost:3001`
+- Parser: `http://localhost:8000`
+- Renderer: `http://localhost:4000`
+
+---
+
+## Local Development (without Docker)
+
+You’ll typically run frontend + backend together.
+
+### 1) Frontend
+
+```bash
+npm install
+npm run dev
+```
+
+Frontend runs at `http://localhost:5173`.
+
+### 2) Backend API
+
+```bash
+npm install
+npm run dev
+```
+
+Run this inside `backend/`. The API runs at `http://localhost:3001`.
+
+### 3) MongoDB
+
+You need a MongoDB instance and a valid `MONGODB_URI` in `backend/.env`.
+
+### 4) (Optional) Parser service
+
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Run this inside `parse-service/`.
+
+### 5) (Optional) Renderer service
+
+```bash
+npm install
+node index.js
+```
+
+Run this inside `renderer/`.
+
+---
+
+## Environment Variables
+
+### Frontend (`.env`)
+
+```env
+VITE_API_URL=http://localhost:3001
+VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+```
+
+### Backend (`backend/.env`)
+
+```env
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+
+MONGODB_URI=mongodb://localhost:27017/resume-builder
+
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:5173/auth/callback
+
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+JWT_EXPIRY=7d
+```
+
+---
+
+## API Overview
+
+Base URL (local): `http://localhost:3001`
+
+- `POST /api/upload`
+  - Upload resume file under `resume` (multipart)
+  - Returns parsed `ResumeData` plus `extractedText`
+- `POST /api/projects-extractor`
+  - Input: `{ "text": "..." }`
+  - Output: `{ "projects": [...] }`
+- `POST /api/brand-analyzer`
+  - Input: `{ targetRole, resume }`
+  - Output: brand alignment score + missing keywords
+- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/google/callback`
+- `GET /api/resume`, `POST /api/resume` (protected: requires `Authorization: Bearer <token>`)
+
+---
+
+## Troubleshooting
+
+- **CORS errors**
+  - Ensure `backend/.env` has `FRONTEND_URL=http://localhost:5173` (or your current Vite port).
+- **401 Unauthorized on `/api/resume`**
+  - You must be authenticated and send `Authorization: Bearer <token>` (stored in localStorage by the frontend).
+- **Renderer takes time on first start**
+  - Puppeteer downloads Chromium on first run; allow 1–2 minutes.
+
+---
+
+## Contributing
+
+- Create a feature branch
+- Keep changes small and focused
+- Open a PR with clear screenshots or notes
+
+---
+
+## License
+
+MIT — see `LICENSE`.

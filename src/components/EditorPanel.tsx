@@ -9,6 +9,7 @@ import ThemePicker from "./ThemePicker";
 import ThemeSwitcher from "./ThemeSwitcher";
 import A4Preview from "./A4Preview";
 import PersonalBrandingAnalyzer from "./PersonalBrandingAnalyzer";
+import MultiJobMatchDashboard from "./MultiJobMatchDashboard";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiService } from "../services/api";
 import AuthService from "../services/auth";
@@ -18,6 +19,14 @@ import {
   applyBulletSuggestion,
   parseBulletLines,
 } from "../services/bulletImpact";
+import { enhanceProjectFromReadme, type ReadmeEnhancementResult } from "../services/readmeEnhancer";
+import { checkGrammar, applyGrammarFix, type GrammarIssue, type GrammarCheckResult } from "../services/grammarChecker";
+import { generateOutreachVariants, type OutreachChannel, type OutreachVariants } from "../services/outreachGenerator";
+import { getOptimizedSectionOrder } from "../services/sectionOrderOptimizer";
+import { scoreStarAnswer } from "../services/starScorer";
+import { scoreResumeAgainstJobDescription, type JobMatchResult } from "../services/jobMatch";
+import { scanResumeSimilarity, type SimilarityScanResult } from "../services/similarityDetector";
+import ExportWizard from "./ExportWizard";
 
 type EditorPanelProps = {
   resume: ResumeData;
@@ -26,6 +35,8 @@ type EditorPanelProps = {
   activeSection: string;
   template: TemplateType;
   onTemplateChange: (tpl: TemplateType) => void;
+  optimizeLayoutOrder: boolean;
+  onOptimizeLayoutOrderChange: (enabled: boolean) => void;
 };
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -35,8 +46,13 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   activeSection,
   template,
   onTemplateChange,
+  optimizeLayoutOrder,
+  onOptimizeLayoutOrderChange,
 }) => {
   const { user, signOut } = useAuth();
+  const effectiveSectionOrder = optimizeLayoutOrder
+    ? getOptimizedSectionOrder(resume)
+    : resume.sectionOrder;
   const allTemplateNames: TemplateType[] = [
     "simple", "professional", "creative", "modern", "minimal", "executive", "academic", "technical",
     "portfolio", "bold", "clean", "compact", "elegant", "classic", "stylish", "fresh", "sharp",
@@ -114,12 +130,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   const [jobDescription, setJobDescription] = useState('');
   const [jobMatchLoading, setJobMatchLoading] = useState(false);
   const [jobMatchError, setJobMatchError] = useState<string>('');
-  const [jobMatchResult, setJobMatchResult] = useState<{
-    score: number;
-    matched: string[];
-    missing: string[];
-    roleHint?: string | null;
-  } | null>(null);
+  const [jobMatchResult, setJobMatchResult] = useState<JobMatchResult | null>(null);
   const [aiAssistantLoading, setAiAssistantLoading] = useState(false);
   const [aiAssistantOutput, setAiAssistantOutput] = useState<string>('');
   const [optimizerLoading, setOptimizerLoading] = useState(false);
@@ -135,6 +146,10 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     starAnswers: string[];
     recruiterQuestions: string[];
   } | null>(null);
+  const [starAnswerDraft, setStarAnswerDraft] = useState(() => {
+    const raw = localStorage.getItem("starAnswerDraft");
+    return raw || "";
+  });
   const [coverLetterTone, setCoverLetterTone] = useState<'formal' | 'casual' | 'enthusiastic'>('formal');
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterOutput, setCoverLetterOutput] = useState<string>('');
@@ -144,6 +159,30 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     shortBio: string;
     prioritizedSkills: string[];
   } | null>(null);
+  const [readmeEnhancerOpen, setReadmeEnhancerOpen] = useState<{
+    projectIndex: number;
+  } | null>(null);
+  const [readmeEnhancerResult, setReadmeEnhancerResult] = useState<ReadmeEnhancementResult | null>(null);
+  const [readmeText, setReadmeText] = useState<string>('');
+  const [grammarResults, setGrammarResults] = useState<Map<string, GrammarCheckResult>>(new Map());
+  const [grammarOpen, setGrammarOpen] = useState<string | null>(null);
+  const [outreachChannel, setOutreachChannel] = useState<OutreachChannel>('linkedin');
+  const [outreachRecruiterName, setOutreachRecruiterName] = useState<string>('');
+  const [outreachCompany, setOutreachCompany] = useState<string>('');
+  const [outreachRole, setOutreachRole] = useState<string>('');
+  const [outreachJobLink, setOutreachJobLink] = useState<string>('');
+  const [outreachVariants, setOutreachVariants] = useState<OutreachVariants | null>(null);
+  const [similarityThreshold, setSimilarityThreshold] = useState(() => {
+    const raw = localStorage.getItem("similarityThreshold");
+    const parsed = raw ? Number(raw) : 0.82;
+    return Number.isFinite(parsed) && parsed >= 0.5 && parsed <= 0.99 ? parsed : 0.82;
+  });
+  const [similarityCompareWithin, setSimilarityCompareWithin] = useState(() => {
+    const raw = localStorage.getItem("similarityCompareWithin");
+    return raw === "true";
+  });
+  const [similarityResult, setSimilarityResult] = useState<SimilarityScanResult | null>(null);
+  const [showExportWizard, setShowExportWizard] = useState(false);
 
   useEffect(() => {
     latestResumeRef.current = resume;
@@ -192,6 +231,18 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   useEffect(() => {
     localStorage.setItem("autoSaveIntervalSec", String(autoSaveIntervalSec));
   }, [autoSaveIntervalSec]);
+
+  useEffect(() => {
+    localStorage.setItem("starAnswerDraft", starAnswerDraft);
+  }, [starAnswerDraft]);
+
+  useEffect(() => {
+    localStorage.setItem("similarityThreshold", String(similarityThreshold));
+  }, [similarityThreshold]);
+
+  useEffect(() => {
+    localStorage.setItem("similarityCompareWithin", String(similarityCompareWithin));
+  }, [similarityCompareWithin]);
 
   useEffect(() => {
     if (!autoSaveEnabled || !user) {
@@ -305,275 +356,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
 
     setJobMatchLoading(true);
     try {
-      const stop = new Set([
-        'the',
-        'a',
-        'an',
-        'and',
-        'or',
-        'to',
-        'of',
-        'in',
-        'for',
-        'with',
-        'on',
-        'at',
-        'by',
-        'from',
-        'as',
-        'is',
-        'are',
-        'be',
-        'will',
-        'you',
-        'we',
-        'our',
-        'your',
-        'this',
-        'that',
-        'these',
-        'those',
-        'must',
-        'should',
-        'can',
-        'able',
-        'experience',
-        'years',
-        'year',
-        'work',
-        'working',
-        'team',
-        'teams',
-        'role',
-        'skills',
-        'responsibilities',
-        'some',
-        'jobs',
-      ]);
-
-      const known = [
-        'javascript',
-        'typescript',
-        'react',
-        'vite',
-        'nextjs',
-        'node',
-        'nodejs',
-        'express',
-        'mongodb',
-        'mongoose',
-        'sql',
-        'postgres',
-        'mysql',
-        'redis',
-        'rest',
-        'api',
-        'graphql',
-        'jwt',
-        'oauth',
-        'docker',
-        'kubernetes',
-        'aws',
-        'gcp',
-        'azure',
-        'git',
-        'ci',
-        'cd',
-        'testing',
-        'jest',
-        'cypress',
-        'tailwind',
-        // AI / ML / Data stack
-        'python',
-        'pandas',
-        'numpy',
-        'scikit-learn',
-        'sklearn',
-        'tensorflow',
-        'pytorch',
-        'keras',
-        'machine learning',
-        'deep learning',
-        'data science',
-        'data scientist',
-        'ml engineer',
-        'ai engineer',
-        'computer vision',
-        'nlp',
-        'natural language processing',
-        'llm',
-        'large language model',
-        'gpt',
-        'transformer',
-        'xgboost',
-        'lightgbm',
-        'spark',
-        'pyspark',
-        'hadoop',
-        'airflow',
-        'etl',
-        'feature engineering',
-        'statistics',
-        'regression',
-        'classification',
-        'clustering',
-        'recommendation',
-        'reinforcement learning',
-        'mle',
-        'mlops',
-        'ai',
-        'ml',
-        'ui',
-        'ux',
-        'qa',
-        'go',
-        'c#',
-        'c++',
-        'r',
-      ];
-
-      const jdLower = text.toLowerCase();
-      const tokens = jdLower
-        .replace(/[^a-z0-9+#.\s]/g, ' ')
-        .split(/\s+/)
-        .map((t) => t.trim())
-        .filter(Boolean);
-
-      const shortImportant = ['ai', 'ml', 'ui', 'ux', 'qa', 'go', 'c#', 'c++', 'r'];
-      const tokenSet = new Set(tokens);
-
-      const freq = new Map<string, number>();
-      for (const t of tokens) {
-        if (t.length < 3) continue;
-        if (stop.has(t)) continue;
-        freq.set(t, (freq.get(t) ?? 0) + 1);
-      }
-
-      const topFromFreq = Array.from(freq.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 25)
-        .map(([k]) => k);
-
-      const fromKnown = known.filter((k) => jdLower.includes(k));
-      const fromShort = shortImportant.filter((k) => tokenSet.has(k));
-      const keywords = Array.from(new Set([...fromKnown, ...fromShort, ...topFromFreq])).slice(0, 30);
-
-      const resumeText = JSON.stringify(resume).toLowerCase();
-      const matched: string[] = [];
-      const missing: string[] = [];
-
-      for (const k of keywords) {
-        if (resumeText.includes(k)) matched.push(k);
-        else missing.push(k);
-      }
-
-      // Role-aware weighting: if the job description clearly targets certain roles,
-      // give extra weight to core keywords for those roles when computing the score.
-      const roleHints = {
-        mlEngineer: ['ml engineer', 'machine learning engineer'],
-        dataScientist: ['data scientist', 'data science'],
-        mlOps: ['mlops', 'ml ops'],
-        genAI: ['generative ai', 'genai', 'llm', 'large language model', 'gpt', 'transformer'],
-      } as const;
-
-      const activeRoles: (keyof typeof roleHints)[] = [];
-      if (roleHints.mlEngineer.some((p) => jdLower.includes(p))) activeRoles.push('mlEngineer');
-      if (roleHints.dataScientist.some((p) => jdLower.includes(p))) activeRoles.push('dataScientist');
-      if (roleHints.mlOps.some((p) => jdLower.includes(p))) activeRoles.push('mlOps');
-      if (roleHints.genAI.some((p) => jdLower.includes(p))) activeRoles.push('genAI');
-
-      const roleCoreKeywords: Record<string, string[]> = {
-        mlEngineer: [
-          'python',
-          'pytorch',
-          'tensorflow',
-          'keras',
-          'ml',
-          'machine learning',
-          'deep learning',
-          'nlp',
-          'llm',
-          'gpt',
-          'computer vision',
-          'feature engineering',
-          'mlops',
-        ],
-        dataScientist: [
-          'python',
-          'pandas',
-          'numpy',
-          'sql',
-          'statistics',
-          'regression',
-          'classification',
-          'clustering',
-          'data science',
-          'ml',
-          'machine learning',
-        ],
-        mlOps: [
-          'mlops',
-          'airflow',
-          'docker',
-          'kubernetes',
-          'aws',
-          'gcp',
-          'azure',
-          'ci',
-          'cd',
-          'spark',
-          'pyspark',
-          'etl',
-        ],
-        genAI: [
-          'llm',
-          'large language model',
-          'gpt',
-          'transformer',
-          'nlp',
-          'natural language processing',
-        ],
-      };
-
-      const weightFor = (kw: string): number => {
-        let w = 1;
-        for (const role of activeRoles) {
-          const core = roleCoreKeywords[role];
-          if (core && core.includes(kw)) {
-            w = Math.max(w, 2);
-          }
-        }
-        return w;
-      };
-
-      let totalWeight = 0;
-      let matchedWeight = 0;
-      for (const k of keywords) {
-        const w = weightFor(k);
-        totalWeight += w;
-        if (matched.includes(k)) matchedWeight += w;
-      }
-
-      const score = totalWeight === 0 ? 0 : Math.round((matchedWeight / totalWeight) * 100);
-
-      let roleHint: string | null = null;
-      if (activeRoles.length > 0) {
-        const labels: Record<keyof typeof roleHints, string> = {
-          mlEngineer: 'ML Engineer',
-          dataScientist: 'Data Scientist',
-          mlOps: 'MLOps Engineer',
-          genAI: 'Generative AI / LLM',
-        };
-        const human = activeRoles.map((r) => labels[r]).join(', ');
-        roleHint = `Detected role: ${human} (AI/ML weighting applied)`;
-      }
-
-      setJobMatchResult({
-        score,
-        matched: matched.slice(0, 30),
-        missing: missing.slice(0, 30),
-        roleHint,
-      });
+      const result = scoreResumeAgainstJobDescription(resume, text);
+      setJobMatchResult(result);
     } finally {
       setJobMatchLoading(false);
     }
@@ -865,9 +649,20 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     return (
       <div className={`h-full overflow-y-auto ${compactMode ? 'p-4' : 'p-8'} bg-dark-bg`}>
         <div className="max-w-4xl mx-auto animate-fade-in">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Templates</h2>
-            <p className="text-gray-300">Choose a template that matches your style</p>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-bold text-white mb-2">Templates</h2>
+              <p className="text-gray-300">Choose a template that matches your style</p>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-gray-300 mt-2">
+              <input
+                type="checkbox"
+                checked={optimizeLayoutOrder}
+                onChange={(e) => onOptimizeLayoutOrderChange(e.target.checked)}
+                className="rounded border-dark-border bg-dark-card text-primary focus:ring-primary"
+              />
+              Optimize layout order
+            </label>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {templateKeys.map((tpl) => (
@@ -887,7 +682,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                         onChange={() => {}}
                         resume={resume}
                         previewOnly
-                        sectionOrder={resume.sectionOrder}
+                        sectionOrder={effectiveSectionOrder}
                       />
                     </A4Preview>
                   </div>
@@ -1055,6 +850,20 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     );
   }
 
+  if (activeSection === "multi-job-match") {
+    return (
+      <div className={`h-full overflow-y-auto ${compactMode ? 'p-4' : 'p-8'} bg-dark-bg`}>
+        <div className={`max-w-3xl mx-auto animate-fade-in ${compactMode ? 'space-y-4' : 'space-y-6'}`}>
+          <MultiJobMatchDashboard
+            resume={resume}
+            onResumeChange={onResumeChange}
+            spellCheckEnabled={spellCheckEnabled}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (activeSection === "settings") {
     return (
       <div className={`h-full overflow-y-auto ${compactMode ? 'p-4' : 'p-8'} bg-dark-bg`}>
@@ -1191,7 +1000,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => window.print()}
+                  onClick={() => setShowExportWizard(true)}
                 >
                   Export / Print
                 </Button>
@@ -1771,7 +1580,23 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             </svg>
           </button>
           {expandedSections.has("summary") && (
-            <div className="mt-6 pt-6 border-t border-dark-border animate-fade-in">
+            <div className="mt-6 pt-6 border-t border-dark-border animate-fade-in space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-300">Summary</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      const result = checkGrammar(resume.summary);
+                      setGrammarResults(prev => new Map(prev).set('summary', result));
+                      setGrammarOpen('summary');
+                    }}
+                  >
+                    Check grammar
+                  </Button>
+                </div>
+              </div>
               <textarea
                 value={resume.summary}
                 spellCheck={spellCheckEnabled}
@@ -1781,6 +1606,56 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                 style={{ backgroundColor: '#111111', color: '#fafafa' }}
                 placeholder="Write a brief professional summary..."
               />
+
+              {grammarOpen === 'summary' && grammarResults.get('summary') && (
+                <div className="mt-4 p-4 rounded-lg border border-dark-border bg-dark-card space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-white">Grammar issues</div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setGrammarOpen(null)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                  {grammarResults.get('summary')!.issues.length === 0 ? (
+                    <div className="text-xs text-green-400">No issues found.</div>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-auto">
+                      {grammarResults.get('summary')!.issues.map((issue, idx) => (
+                        <div key={idx} className="p-2 rounded border border-dark-border bg-dark-surface/50">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="text-xs text-gray-200 mb-1">{issue.message}</div>
+                              <div className="text-xs text-gray-400">
+                                Type: {issue.type} | Severity: {issue.severity}
+                              </div>
+                            </div>
+                            {issue.suggestion && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  const fixed = applyGrammarFix(resume.summary, issue);
+                                  onResumeChange({ ...resume, summary: fixed });
+                                  setGrammarResults(prev => {
+                                    const next = new Map(prev);
+                                    next.set('summary', checkGrammar(fixed));
+                                    return next;
+                                  });
+                                }}
+                              >
+                                Apply fix
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </Card>
@@ -1939,6 +1814,120 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
           </div>
         </Card>
 
+        <Card glow="purple">
+          <div className="space-y-4">
+            <div>
+              <div className="text-lg font-semibold text-white">Similarity Detector</div>
+              <div className="text-sm text-gray-300">Detect repeated/boilerplate lines across sections (TF-IDF cosine similarity)</div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center justify-between gap-4 md:col-span-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white">Threshold</div>
+                  <div className="text-xs text-gray-400">Higher = stricter (try 0.82–0.90)</div>
+                </div>
+                <input
+                  type="number"
+                  min={0.5}
+                  max={0.99}
+                  step={0.01}
+                  value={similarityThreshold}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    setSimilarityThreshold(Math.min(0.99, Math.max(0.5, n)));
+                    setSimilarityResult(null);
+                  }}
+                  className="w-28 px-3 py-2 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  style={{ backgroundColor: '#111111', color: '#fafafa' }}
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={similarityCompareWithin}
+                  onChange={(e) => {
+                    setSimilarityCompareWithin(e.target.checked);
+                    setSimilarityResult(null);
+                  }}
+                  className="rounded border-dark-border bg-dark-card text-primary focus:ring-primary"
+                />
+                Compare within same section
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const result = scanResumeSimilarity(resume, {
+                    threshold: similarityThreshold,
+                    compareWithinSameGroup: similarityCompareWithin,
+                  });
+                  setSimilarityResult(result);
+                }}
+              >
+                Scan
+              </Button>
+              {similarityResult && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setSimilarityResult(null)}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {similarityResult && (
+              <div className="space-y-3">
+                <div className="text-xs text-gray-400">
+                  Scanned {similarityResult.items.length} lines. Found {similarityResult.warnings.length} similar pair{similarityResult.warnings.length === 1 ? '' : 's'}.
+                </div>
+
+                {similarityResult.warnings.length === 0 ? (
+                  <div className="text-xs text-green-300">No “too similar” lines detected at this threshold.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {similarityResult.warnings.map((w, idx) => (
+                      <div
+                        key={`${w.a.id}__${w.b.id}__${idx}`}
+                        className="p-3 rounded-lg border border-dark-border bg-dark-surface/50 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs font-semibold text-orange-300">
+                            {Math.round(w.similarity * 100)}% similar
+                          </div>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${w.a.text}\n\n---\n\n${w.b.text}`);
+                            }}
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                        <div className="text-[11px] text-gray-400">
+                          {w.a.label} vs {w.b.label}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="text-xs text-gray-200 whitespace-pre-wrap">{w.a.text}</div>
+                          <div className="text-xs text-gray-200 whitespace-pre-wrap">{w.b.text}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+
         {/* AI Interview Prep Card */}
         <Card glow="blue">
           <div className="space-y-4">
@@ -2001,6 +1990,253 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               </div>
             )}
           </div>
+        </Card>
+
+        <Card glow="gold">
+          <div className="space-y-4">
+            <div>
+              <div className="text-lg font-semibold text-white">Recruiter Outreach Generator</div>
+              <div className="text-sm text-gray-300">Generate short LinkedIn/email cold outreach messages</div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white">Channel</div>
+                  <div className="text-xs text-gray-400">Choose where you will send the message</div>
+                </div>
+                <select
+                  value={outreachChannel}
+                  onChange={(e) => {
+                    setOutreachChannel(e.target.value as OutreachChannel);
+                    setOutreachVariants(null);
+                  }}
+                  className="px-3 py-2 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  style={{ backgroundColor: '#111111', color: '#fafafa' }}
+                >
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="email">Email</option>
+                </select>
+              </div>
+
+              <input
+                type="text"
+                value={outreachRecruiterName}
+                onChange={(e) => {
+                  setOutreachRecruiterName(e.target.value);
+                  setOutreachVariants(null);
+                }}
+                placeholder="Recruiter name (optional)"
+                className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                style={{ backgroundColor: '#111111', color: '#fafafa' }}
+              />
+
+              <input
+                type="text"
+                value={outreachCompany}
+                onChange={(e) => {
+                  setOutreachCompany(e.target.value);
+                  setOutreachVariants(null);
+                }}
+                placeholder="Company (optional)"
+                className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                style={{ backgroundColor: '#111111', color: '#fafafa' }}
+              />
+
+              <input
+                type="text"
+                value={outreachRole}
+                onChange={(e) => {
+                  setOutreachRole(e.target.value);
+                  setOutreachVariants(null);
+                }}
+                placeholder="Role / Position (optional)"
+                className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                style={{ backgroundColor: '#111111', color: '#fafafa' }}
+              />
+
+              <input
+                type="text"
+                value={outreachJobLink}
+                onChange={(e) => {
+                  setOutreachJobLink(e.target.value);
+                  setOutreachVariants(null);
+                }}
+                placeholder="Job link (optional)"
+                className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all md:col-span-2"
+                style={{ backgroundColor: '#111111', color: '#fafafa' }}
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const variants = generateOutreachVariants(resume, {
+                    channel: outreachChannel,
+                    recruiterName: outreachRecruiterName,
+                    company: outreachCompany,
+                    role: outreachRole,
+                    jobLink: outreachJobLink,
+                  });
+                  setOutreachVariants(variants);
+                }}
+              >
+                Generate messages
+              </Button>
+            </div>
+
+            {outreachVariants && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(['formal', 'short', 'enthusiastic'] as const).map((tone) => {
+                  const msg = outreachVariants[tone];
+                  const title = tone === 'formal' ? 'Formal' : tone === 'short' ? 'Short' : 'Enthusiastic';
+                  const copyText = msg.subject ? `Subject: ${msg.subject}\n\n${msg.body}` : msg.body;
+
+                  return (
+                    <div key={tone} className="p-3 rounded-lg border border-dark-border bg-dark-surface/50 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-semibold text-white">{title}</div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(copyText);
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      {msg.subject && (
+                        <div className="text-xs text-gray-200">
+                          <strong>Subject:</strong> {msg.subject}
+                        </div>
+                      )}
+                      <pre className="whitespace-pre-wrap text-xs text-gray-200 font-serif">{msg.body}</pre>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card glow="green">
+          {(() => {
+            const starScoring = scoreStarAnswer(starAnswerDraft);
+
+            return (
+              <div className="space-y-4">
+                <div>
+                  <div className="text-lg font-semibold text-white">STAR Answer Scorer</div>
+                  <div className="text-sm text-gray-300">Score your answer for Situation, Task, Action, Result completeness</div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-white mb-2">Your answer</label>
+                  <textarea
+                    rows={6}
+                    spellCheck={spellCheckEnabled}
+                    value={starAnswerDraft}
+                    onChange={(e) => setStarAnswerDraft(e.target.value)}
+                    className="w-full px-4 py-3 bg-dark-surface border border-dark-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+                    style={{ backgroundColor: '#111111', color: '#fafafa' }}
+                    placeholder="Paste your interview answer here..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-white">STAR Score</div>
+                    <div className="text-sm text-gray-200">{starScoring.score}%</div>
+                  </div>
+
+                  <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-full transition-all duration-500 ease-out flex items-center justify-center text-xs font-semibold"
+                      style={{
+                        width: `${starScoring.score}%`,
+                        background:
+                          starScoring.score >= 80
+                            ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+                            : starScoring.score >= 60
+                            ? 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)'
+                            : 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)',
+                      }}
+                    >
+                      {starScoring.score > 10 ? `${starScoring.score}%` : ''}
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-400">
+                    {starScoring.score >= 80
+                      ? 'Complete STAR structure'
+                      : starScoring.score >= 60
+                      ? 'Mostly complete'
+                      : starScoring.score >= 40
+                      ? 'Needs stronger structure'
+                      : 'Missing key STAR parts'}
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {(["situation", "task", "action", "result"] as const).map((k) => (
+                      <div
+                        key={k}
+                        className={`px-2 py-2 rounded-lg border border-dark-border bg-dark-surface/50`}
+                      >
+                        <div className="text-[11px] text-gray-400 capitalize">{k}</div>
+                        <div className={`text-xs font-semibold ${starScoring.components[k].present ? 'text-green-300' : 'text-orange-300'}`}>
+                          {starScoring.components[k].present ? 'Present' : 'Missing'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg border border-dark-border bg-dark-surface/50 space-y-3">
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-2">What’s missing</div>
+                    {starScoring.missing.length === 0 ? (
+                      <div className="text-xs text-green-300">Looks complete.</div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {starScoring.missing.map((m) => (
+                          <span
+                            key={m}
+                            className="px-2 py-1 rounded bg-red-600/20 border border-red-600/30 text-xs text-red-200 capitalize"
+                          >
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {starScoring.hints.length > 0 && (
+                    <div>
+                      <div className="text-sm font-semibold text-white mb-2">Hints</div>
+                      <ul className="text-xs text-gray-300 list-disc list-inside space-y-1">
+                        {starScoring.hints.map((h, i) => (
+                          <li key={i}>{h}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setStarAnswerDraft('')}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
         </Card>
 
         {/* AI Cover Letter Builder Card */}
@@ -2594,6 +2830,73 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                     style={{ backgroundColor: '#1a1a1a', color: '#fafafa' }}
                   />
 
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const result = checkGrammar(proj.description);
+                        setGrammarResults(prev => new Map(prev).set(`proj-${idx}`, result));
+                        setGrammarOpen(`proj-${idx}`);
+                      }}
+                    >
+                      Check grammar
+                    </Button>
+                  </div>
+
+                  {grammarOpen === `proj-${idx}` && grammarResults.get(`proj-${idx}`) && (
+                    <div className="mt-4 p-4 rounded-lg border border-dark-border bg-dark-card space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-semibold text-white">Grammar issues</div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setGrammarOpen(null)}
+                        >
+                          Close
+                        </Button>
+                      </div>
+                      {grammarResults.get(`proj-${idx}`)!.issues.length === 0 ? (
+                        <div className="text-xs text-green-400">No issues found.</div>
+                      ) : (
+                        <div className="space-y-2 max-h-48 overflow-auto">
+                          {grammarResults.get(`proj-${idx}`)!.issues.map((issue, iIdx) => (
+                            <div key={iIdx} className="p-2 rounded border border-dark-border bg-dark-surface/50">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1">
+                                  <div className="text-xs text-gray-200 mb-1">{issue.message}</div>
+                                  <div className="text-xs text-gray-400">
+                                    Type: {issue.type} | Severity: {issue.severity}
+                                  </div>
+                                </div>
+                                {issue.suggestion && (
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => {
+                                      const fixed = applyGrammarFix(proj.description, issue);
+                                      const projects = resume.projects || [];
+                                      const next = [...projects];
+                                      next[idx] = { ...proj, description: fixed };
+                                      onResumeChange({ ...resume, projects: next });
+                                      setGrammarResults(prev => {
+                                        const updated = new Map(prev);
+                                        updated.set(`proj-${idx}`, checkGrammar(fixed));
+                                        return updated;
+                                      });
+                                    }}
+                                  >
+                                    Apply fix
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {parseBulletLines(proj.description).length > 0 && (
                     <div className="space-y-2">
                       {parseBulletLines(proj.description).map((line) => {
@@ -2726,6 +3029,138 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                       className="px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setReadmeEnhancerOpen({ projectIndex: idx });
+                        setReadmeText('');
+                        setReadmeEnhancerResult(null);
+                      }}
+                    >
+                      Enhance from README
+                    </Button>
+                  </div>
+
+                  {readmeEnhancerOpen?.projectIndex === idx && (
+                    <div className="mt-4 p-4 rounded-lg border border-dark-border bg-dark-card space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-white">Enhance project from README text</p>
+                        <p className="text-xs text-gray-400">Paste README markdown to extract project name, description bullets, and tech stack.</p>
+                      </div>
+
+                      <textarea
+                        value={readmeText}
+                        onChange={(e) => setReadmeText(e.target.value)}
+                        placeholder="Paste README markdown here..."
+                        rows={6}
+                        className="w-full px-3 py-2 bg-dark-surface border border-dark-border rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                      />
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            const result = enhanceProjectFromReadme(readmeText, {
+                              fallbackName: proj.name,
+                              fallbackTechStack: proj.techStack,
+                              maxBullets: 3,
+                            });
+                            setReadmeEnhancerResult(result);
+                          }}
+                        >
+                          Parse
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setReadmeEnhancerOpen(null);
+                            setReadmeText('');
+                            setReadmeEnhancerResult(null);
+                          }}
+                        >
+                          Close
+                        </Button>
+
+                        {readmeEnhancerResult && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              const projects = resume.projects || [];
+                              const next = [...projects];
+                              next[idx] = {
+                                name: readmeEnhancerResult.suggestedName || proj.name,
+                                description: readmeEnhancerResult.suggestedDescription || proj.description,
+                                techStack: readmeEnhancerResult.suggestedTechStack || proj.techStack,
+                                link: proj.link,
+                              };
+                              onResumeChange({ ...resume, projects: next });
+                              setReadmeEnhancerOpen(null);
+                              setReadmeText('');
+                              setReadmeEnhancerResult(null);
+                            }}
+                          >
+                            Apply
+                          </Button>
+                        )}
+                      </div>
+
+                      {readmeEnhancerResult && (
+                        <div className="space-y-3">
+                          {readmeEnhancerResult.warnings.length > 0 && (
+                            <div className="p-2 rounded-md border border-yellow-600/50 bg-yellow-900/20">
+                              <p className="text-xs font-semibold text-yellow-400">Warnings</p>
+                              <ul className="list-disc list-inside text-xs text-yellow-300 mt-1">
+                                {readmeEnhancerResult.warnings.map((w, wIdx) => (
+                                  <li key={wIdx}>{w}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                              <p className="text-xs font-semibold text-white mb-1">Suggested name</p>
+                              <p className="text-xs text-gray-300 bg-dark-surface p-2 rounded border border-dark-border">
+                                {readmeEnhancerResult.suggestedName || <span className="text-gray-500">No change</span>}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-white mb-1">Tech stack</p>
+                              <p className="text-xs text-gray-300 bg-dark-surface p-2 rounded border border-dark-border">
+                                {readmeEnhancerResult.suggestedTechStack || <span className="text-gray-500">No change</span>}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-white mb-1">Bullets</p>
+                              <ul className="list-disc list-inside text-xs text-gray-300 bg-dark-surface p-2 rounded border border-dark-border max-h-20 overflow-auto">
+                                {readmeEnhancerResult.bullets.length > 0
+                                  ? readmeEnhancerResult.bullets.map((b, bIdx) => (
+                                      <li key={bIdx}>{b}</li>
+                                    ))
+                                  : <span className="text-gray-500">None</span>}
+                              </ul>
+                            </div>
+                          </div>
+
+                          {readmeEnhancerResult.suggestedDescription && (
+                            <div>
+                              <p className="text-xs font-semibold text-white mb-1">Suggested description</p>
+                              <pre className="text-xs text-gray-300 bg-dark-surface p-2 rounded border border-dark-border whitespace-pre-wrap">
+                                {readmeEnhancerResult.suggestedDescription}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
               <div className="flex justify-end">
@@ -2751,6 +3186,19 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
         {/* Personal Branding Analyzer */}
         <PersonalBrandingAnalyzer resume={resume} />
       </div>
+
+      {/* Export Wizard */}
+      <ExportWizard
+        isOpen={showExportWizard}
+        onClose={() => setShowExportWizard(false)}
+        resume={resume}
+        pageSize={pageSize}
+        marginMm={marginMm}
+        scalePercent={scalePercent}
+        onPageSizeChange={setPageSize}
+        onMarginChange={setMarginMm}
+        onScaleChange={setScalePercent}
+      />
     </div>
   );
 };

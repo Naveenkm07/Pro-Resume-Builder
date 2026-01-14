@@ -433,7 +433,7 @@ const Upload: React.FC<UploadProps> = ({ onParsed }) => {
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-accent-purple to-accent-blue shadow-md">
-              Check Your Score
+              Upload
             </button>
             <p className="text-xs text-gray-300">
               We can read: <span className="font-semibold">DOC, DOCX, PDF, HTML, RTF, TXT</span>
