@@ -12,6 +12,13 @@ export type Education = {
   year: string;
 };
 
+export type Project = {
+  name: string;
+  description: string;
+  techStack?: string;
+  link?: string;
+};
+
 export type ResumeData = {
   name: string;
   contact: string;
@@ -19,6 +26,7 @@ export type ResumeData = {
   skills: string[];
   experience: Experience[];
   education: Education[];
+  projects: Project[];
 };
 
 export const SAMPLE_RESUME: ResumeData = {
@@ -42,6 +50,13 @@ export const SAMPLE_RESUME: ResumeData = {
       year: "2025",
     },
   ],
+  projects: [
+    {
+      name: "PersonalDataManager.ADV – Secure Personal Data Management Tool",
+      description:
+        "Built a desktop/web tool to manage personal records securely with role-based access, search, backup and restore.",
+      techStack: "Python, SQLite/MySQL, AES encryption, Tkinter/Flask",
+      link: "https://github.com/Naveenkm07/PersonalDataManager-ADV",
+    },
+  ],
 };
-
-

@@ -50,19 +50,22 @@ const ResumeForm: React.FC<ResumeFormProps> = ({ value, onChange }) => {
           .filter(Boolean) ?? [];
 
       let parsed: ResumeData | null = null;
-      try {
-        parsed = JSON.parse(form.rawJson) as ResumeData;
-      } catch {
-        // Ignore JSON parse errors; fall back to field-based data.
+      const rawJson = form.rawJson?.trim();
+      if (rawJson) {
+        try {
+          parsed = JSON.parse(rawJson) as ResumeData;
+        } catch {
+          // Ignore JSON parse errors; fall back to field-based data.
+        }
       }
 
       const next: ResumeData = parsed
         ? parsed
         : {
             ...value,
-            name: form.name,
-            contact: form.contact,
-            summary: form.summary,
+            name: form.name ?? value.name,
+            contact: form.contact ?? value.contact,
+            summary: form.summary ?? value.summary,
             skills: skillsArray,
           };
 

@@ -41,13 +41,29 @@ const Upload: React.FC<UploadProps> = ({ onParsed }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        let detail = "";
+        try {
+          const ct = response.headers.get("content-type") || "";
+          if (ct.includes("application/json")) {
+            const body = await response.json();
+            detail = body?.error ? String(body.error) : JSON.stringify(body);
+          } else {
+            detail = await response.text();
+          }
+        } catch {
+          // ignore parsing error
+        }
+        const msg = detail
+          ? `Upload failed (${response.status}): ${detail}`
+          : `Upload failed (${response.status}).`;
+        throw new Error(msg);
       }
 
       const data = await response.json();
       onParsed(data);
     } catch (err) {
-      setError("Failed to upload resume. Please try again.");
+      const message = err instanceof Error ? err.message : "Failed to upload resume. Please try again.";
+      setError(message);
     } finally {
       setIsUploading(false);
     }
