@@ -1,0 +1,7 @@
+node_modules/
+out.pdf
+test-output.pdf
+*.log
+.DS_Store
+.env
+

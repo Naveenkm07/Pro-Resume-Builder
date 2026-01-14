@@ -1,0 +1,336 @@
+import express, { Request, Response } from 'express';
+import { OAuth2Client } from 'google-auth-library';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import type { StringValue } from 'ms';
+import bcrypt from 'bcryptjs';
+import User from '../models/User';
+
+const router = express.Router();
+
+// Initialize Google OAuth client
+const client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5173/auth/callback'
+);
+
+/**
+ * POST /api/auth/google/callback
+ * Exchange authorization code for ID token
+ * Then verify ID token and create/login user
+ */
+router.post('/google/callback', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      res.status(400).json({ error: 'Authorization code is required' });
+      return;
+    }
+
+    // Exchange authorization code for tokens
+    const { tokens } = await client.getToken(code);
+    const idToken = tokens.id_token;
+
+    if (!idToken) {
+      res.status(400).json({ error: 'Failed to get ID token' });
+      return;
+    }
+
+    // Verify Google ID token
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    
+    if (!payload) {
+      res.status(401).json({ error: 'Invalid Google token' });
+      return;
+    }
+
+    // Extract user information from Google token
+    const { sub: googleId, email, name, picture, email_verified } = payload;
+
+    // Validate required fields
+    if (!email || !name) {
+      res.status(400).json({ error: 'Missing required user information' });
+      return;
+    }
+
+    // Find or create user
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Check if user exists with same email
+      user = await User.findOne({ email });
+      
+      if (user) {
+        // Link Google account to existing user
+        user.googleId = googleId;
+        user.picture = picture;
+        await user.save();
+      } else {
+        // Create new user
+        user = new User({
+          googleId,
+          email,
+          name,
+          picture,
+          emailVerified: email_verified || false,
+        });
+        await user.save();
+      }
+    } else {
+      // Update user info on login
+      user.name = name;
+      user.picture = picture;
+      user.emailVerified = email_verified || false;
+      await user.save();
+    }
+
+    // Generate JWT token
+    const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    const signOptions: SignOptions = {
+      expiresIn: (process.env.JWT_EXPIRY || '7d') as StringValue,
+    };
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        email: user.email,
+      },
+      JWT_SECRET,
+      signOptions
+    );
+
+    // Return token and user info to frontend
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+      },
+      message: 'Authentication successful',
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
+
+/**
+ * POST /api/auth/register
+ * Register new user with email and password
+ */
+router.post('/register', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password, name } = req.body;
+
+    // Validation
+    if (!email || !password || !name) {
+      res.status(400).json({ error: 'Email, password, and name are required' });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: 'Invalid email format' });
+      return;
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return;
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(409).json({ error: 'User with this email already exists' });
+      return;
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    const user = new User({
+      email,
+      password: hashedPassword,
+      name,
+      emailVerified: false, // Email verification can be added later
+    });
+
+    await user.save();
+
+    // Generate JWT token
+    const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    const signOptions: SignOptions = {
+      expiresIn: (process.env.JWT_EXPIRY || '7d') as StringValue,
+    };
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        email: user.email,
+      },
+      JWT_SECRET,
+      signOptions
+    );
+
+    // Return token and user info (without password)
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+      },
+      message: 'Registration successful',
+    });
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    
+    // Handle specific MongoDB errors
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      res.status(409).json({ 
+        error: `${field === 'email' ? 'Email' : 'User'} already exists` 
+      });
+      return;
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((e: any) => e.message);
+      res.status(400).json({ error: messages.join(', ') });
+      return;
+    }
+    
+    // Generic error
+    const errorMessage = error.message || 'Registration failed';
+    res.status(500).json({ error: errorMessage });
+  }
+});
+
+/**
+ * POST /api/auth/login
+ * Login user with email and password
+ */
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    // Check if user has password (email/password auth)
+    if (!user.password) {
+      res.status(401).json({ 
+        error: 'This account was created with Google. Please sign in with Google.' 
+      });
+      return;
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    // Generate JWT token
+    const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    const signOptions: SignOptions = {
+      expiresIn: (process.env.JWT_EXPIRY || '7d') as StringValue,
+    };
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        email: user.email,
+      },
+      JWT_SECRET,
+      signOptions
+    );
+
+    // Return token and user info
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+      },
+      message: 'Login successful',
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+/**
+ * GET /api/auth/me
+ * Get current authenticated user
+ * Protected route - requires valid JWT token
+ */
+router.get('/me', async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Get token from Authorization header
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const token = authHeader.substring(7);
+    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+    // Verify JWT token
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+
+    // Find user
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+      },
+    });
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ error: 'Invalid or expired token' });
+    } else {
+      res.status(500).json({ error: 'Failed to fetch user' });
+    }
+  }
+});
+
+export default router;
