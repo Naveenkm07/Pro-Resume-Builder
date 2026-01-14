@@ -3,7 +3,7 @@ import React from "react";
 type CardProps = {
   children: React.ReactNode;
   className?: string;
-  glow?: "purple" | "blue" | "gold" | false;
+  glow?: "purple" | "blue" | "gold" | "green" | false;
   onClick?: () => void;
 };
 

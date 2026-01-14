@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { ResumeData } from "../types";
+import AutocompleteInput from "./ui/AutocompleteInput";
 
 type ResumeFormProps = {
   value: ResumeData;
@@ -29,6 +30,7 @@ const ResumeForm: React.FC<ResumeFormProps> = ({ value, onChange }) => {
 
   const {
     register,
+    control,
     watch,
     reset,
     formState: { errors },
@@ -118,11 +120,18 @@ const ResumeForm: React.FC<ResumeFormProps> = ({ value, onChange }) => {
           <label className="block text-xs font-medium text-gray-300 mb-2">
             Skills (comma separated)
           </label>
-          <input
-            type="text"
-            {...register("skills")}
-            className="mt-1 block w-full rounded-lg border-dark-border bg-dark-surface px-3 py-2 text-sm text-white shadow-sm focus:border-accent-purple focus:ring-2 focus:ring-accent-purple focus:ring-opacity-50 transition-all"
-            style={{ backgroundColor: '#111111', color: '#fafafa' }}
+          <Controller
+            control={control}
+            name="skills"
+            render={({ field }) => (
+              <AutocompleteInput
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                placeholder="React, Node.js, Python..."
+                className="mt-1 block w-full rounded-lg border-dark-border bg-dark-surface px-3 py-2 text-sm text-white shadow-sm focus:border-accent-purple focus:ring-2 focus:ring-accent-purple focus:ring-opacity-50 transition-all"
+                style={{ backgroundColor: '#111111', color: '#fafafa' }}
+              />
+            )}
           />
         </div>
       </div>

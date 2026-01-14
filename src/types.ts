@@ -27,6 +27,27 @@ export type ResumeData = {
   experience: Experience[];
   education: Education[];
   projects: Project[];
+  versionName?: string;
+  sectionOrder?: string[];
+};
+
+export type TargetRole = {
+  title: string;
+  jobDescription?: string;
+  jobKeywords?: string[];
+};
+
+export type BrandAnalysisResult = {
+  score: number;
+  label: string;
+  sectionCoverage: {
+    summary: number;
+    skills: number;
+    projects: number;
+  };
+  missingKeywords: string[];
+  underEmphasizedInSummary: string[];
+  suggestions: string[];
 };
 
 export const SAMPLE_RESUME: ResumeData = {
@@ -59,4 +80,5 @@ export const SAMPLE_RESUME: ResumeData = {
       link: "https://github.com/Naveenkm07/PersonalDataManager-ADV",
     },
   ],
+  versionName: 'Base',
 };

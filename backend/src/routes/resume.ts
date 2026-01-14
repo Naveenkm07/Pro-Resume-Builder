@@ -18,9 +18,30 @@ router.get('/', async (req: any, res) => {
         const userId = req.user?.userId;
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
+        const versionName = typeof req.query?.versionName === 'string' ? req.query.versionName.trim() : '';
+
+        if (versionName) {
+            const query =
+                versionName === 'Base'
+                    ? { user: userId, $or: [{ versionName: 'Base' }, { versionName: { $exists: false } }] }
+                    : { user: userId, versionName };
+            const resume = await Resume.findOne(query).sort({ updatedAt: -1 });
+            if (!resume) {
+                return res.json(null);
+            }
+            const obj = resume.toObject();
+            if (!obj.versionName) obj.versionName = 'Base';
+            return res.json(obj);
+        }
+
         // For this app, we'll sort by updated at and get the latest
         const resumes = await Resume.find({ user: userId }).sort({ updatedAt: -1 });
-        res.json(resumes);
+        const normalized = resumes.map((r) => {
+            const obj = r.toObject();
+            if (!obj.versionName) obj.versionName = 'Base';
+            return obj;
+        });
+        res.json(normalized);
     } catch (err) {
         console.error('Error fetching resumes:', err);
         res.status(500).json({ error: 'Failed to fetch resumes' });
@@ -49,35 +70,60 @@ router.post('/', async (req: any, res) => {
         const userId = req.user?.userId;
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { name, contact, summary, skills, experience, education } = req.body;
+        const {
+            versionName: rawVersionName,
+            sectionOrder,
+            name,
+            contact,
+            summary,
+            skills,
+            experience,
+            education,
+            projects,
+        } = req.body;
 
-        // Check if user already has a resume, if so update it (Single Resume Strategy for now)
-        let resume = await Resume.findOne({ user: userId });
+        const versionName = typeof rawVersionName === 'string' && rawVersionName.trim() ? rawVersionName.trim() : 'Base';
+
+        const findQuery =
+            versionName === 'Base'
+                ? { user: userId, $or: [{ versionName: 'Base' }, { versionName: { $exists: false } }] }
+                : { user: userId, versionName };
+
+        // Check if user already has this version, if so update it
+        let resume = await Resume.findOne(findQuery);
 
         if (resume) {
             // Update existing
+            resume.versionName = versionName;
+            resume.sectionOrder = Array.isArray(sectionOrder) ? sectionOrder : resume.sectionOrder;
             resume.name = name;
             resume.contact = contact;
             resume.summary = summary;
             resume.skills = skills;
             resume.experience = experience;
             resume.education = education;
+            resume.projects = projects;
             await resume.save();
         } else {
             // Create new
             resume = new Resume({
                 user: userId,
+                versionName,
+                sectionOrder: Array.isArray(sectionOrder) ? sectionOrder : undefined,
                 name,
                 contact,
                 summary,
                 skills,
                 experience,
                 education,
+                projects,
             });
             await resume.save();
         }
 
-        res.json(resume);
+        const obj = resume.toObject();
+        if (!obj.versionName) obj.versionName = 'Base';
+        res.json(obj);
     } catch (err) {
         console.error('Error saving resume:', err);
         res.status(500).json({ error: 'Failed to save resume' });

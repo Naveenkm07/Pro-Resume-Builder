@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { SAMPLE_RESUME, type ResumeData } from "./types";
 import { TemplateType } from "./components/TemplateSwitcher";
@@ -16,9 +16,12 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ContactPage from "./pages/ContactPage";
 import { useAuth } from "./contexts/AuthContext";
 import { ApiService } from "./services/api";
+import { tailorResumeForRole, ROLE_TEMPLATES, type RoleTemplateId } from "./services/tailoring";
 
 const AppContent: React.FC = () => {
   const [resume, setResume] = useState<ResumeData>(SAMPLE_RESUME);
+  const [resumeVersions, setResumeVersions] = useState<ResumeData[]>([]);
+  const [activeVersionName, setActiveVersionName] = useState<string>('Base');
   const [template, setTemplate] = useState<TemplateType>(() => {
     const rememberLast = localStorage.getItem("rememberLastTemplate") === "true";
     if (rememberLast) {
@@ -36,16 +39,70 @@ const AppContent: React.FC = () => {
   const { user } = useAuth();
   const [showLanding, setShowLanding] = useState(!user);
 
+  const handleResumeChange = (updatedResume: ResumeData) => {
+    setResume(updatedResume);
+    setResumeVersions(prev => prev.map(v => 
+      v.versionName === activeVersionName ? { ...updatedResume, versionName: activeVersionName } : v
+    ));
+  };
+
+  const handleVersionSwitch = (versionName: string) => {
+    const version = resumeVersions.find(v => v.versionName === versionName);
+    if (version) {
+      setActiveVersionName(versionName);
+      setResume(version);
+    }
+  };
+
+  const handleCreateVersion = () => {
+    const roleOptions = Object.entries(ROLE_TEMPLATES).map(([id, template]) => ({
+      id,
+      label: template.label,
+    }));
+    
+    const roleChoice = prompt(
+      `Select a role to tailor for:\n${roleOptions.map((r, i) => `${i + 1}. ${r.label}`).join('\n')}\n\nEnter number (1-${roleOptions.length}):`
+    );
+    
+    const roleIndex = parseInt(roleChoice || '', 10) - 1;
+    if (isNaN(roleIndex) || roleIndex < 0 || roleIndex >= roleOptions.length) {
+      alert('Invalid selection');
+      return;
+    }
+    
+    const selectedRole = roleOptions[roleIndex].id as RoleTemplateId;
+    const versionName = prompt(`Enter version name for ${ROLE_TEMPLATES[selectedRole].label} resume:`);
+    
+    if (versionName && versionName.trim()) {
+      const tailoredResume = tailorResumeForRole(resume, selectedRole);
+      const newVersion = {
+        ...tailoredResume,
+        versionName: versionName.trim(),
+        _id: undefined,
+      };
+      setResumeVersions(prev => [...prev, newVersion]);
+      setActiveVersionName(versionName.trim());
+      setResume(newVersion);
+    }
+  };
+
   // Load resume when user logs in
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       setShowLanding(false);
 
       const loadResume = async () => {
-        const savedResume = await ApiService.getResume();
-        if (savedResume) {
-          // Merge with sample to ensure all fields exist if partial save
-          setResume(savedResume);
+        const allVersions = await ApiService.getResumes();
+        if (allVersions && allVersions.length > 0) {
+          setResumeVersions(allVersions);
+          const baseVersion = allVersions.find(v => v.versionName === 'Base');
+          if (baseVersion) {
+            setActiveVersionName('Base');
+            setResume(baseVersion);
+          } else {
+            setActiveVersionName(allVersions[0].versionName || 'Base');
+            setResume(allVersions[0]);
+          }
         }
       };
       loadResume();
@@ -54,14 +111,18 @@ const AppContent: React.FC = () => {
     }
   }, [user]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (localStorage.getItem("rememberLastTemplate") === "true") {
       localStorage.setItem("lastTemplate", template);
     }
   }, [template]);
 
   const handleUploadParsed = (data: ResumeData) => {
-    setResume(data);
+    const updatedResume = { ...data, versionName: activeVersionName };
+    setResume(updatedResume);
+    setResumeVersions(prev => prev.map(v => 
+      v.versionName === activeVersionName ? updatedResume : v
+    ));
     setActiveSection("edit");
   };
 
@@ -113,24 +174,51 @@ const AppContent: React.FC = () => {
             onSectionChange={setActiveSection}
           />
 
-          <div className="flex-1 flex overflow-hidden ml-16">
-            <div className="w-1/2 border-r border-dark-border overflow-hidden">
-              <EditorPanel
-                resume={resume}
-                onResumeChange={setResume}
-                onUploadParsed={handleUploadParsed}
-                activeSection={activeSection}
-                template={template}
-                onTemplateChange={setTemplate}
-              />
-            </div>
+          <div className="flex-1 flex flex-col overflow-hidden ml-16">
+            {resumeVersions.length > 0 && (
+              <div className="border-b border-dark-border bg-dark-surface px-4 py-2 flex items-center gap-2 overflow-x-auto">
+                {resumeVersions.map((v) => (
+                  <button
+                    key={v.versionName || 'Base'}
+                    type="button"
+                    onClick={() => handleVersionSwitch(v.versionName || 'Base')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
+                      activeVersionName === (v.versionName || 'Base')
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'bg-dark-card text-gray-300 hover:bg-dark-border hover:text-white'
+                    }`}
+                  >
+                    {v.versionName || 'Base'}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleCreateVersion}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-dark-card text-gray-300 hover:bg-dark-border hover:text-white transition-all whitespace-nowrap"
+                >
+                  + New Version
+                </button>
+              </div>
+            )}
+            <div className="flex-1 flex overflow-hidden">
+              <div className="w-1/2 border-r border-dark-border overflow-hidden">
+                <EditorPanel
+                  resume={resume}
+                  onResumeChange={handleResumeChange}
+                  onUploadParsed={handleUploadParsed}
+                  activeSection={activeSection}
+                  template={template}
+                  onTemplateChange={setTemplate}
+                />
+              </div>
 
-            <div className="w-1/2 overflow-hidden">
-              <PreviewPanel
-                resume={resume}
-                template={template}
-                onTemplateChange={setTemplate}
-              />
+              <div className="w-1/2 overflow-hidden">
+                <PreviewPanel
+                  resume={resume}
+                  template={template}
+                  onTemplateChange={setTemplate}
+                />
+              </div>
             </div>
           </div>
         </div>

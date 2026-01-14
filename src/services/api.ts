@@ -13,7 +13,6 @@ const getAuthHeaders = () => {
 };
 
 export const ApiService = {
-    // Save or Update resume
     saveResume: async (resumeData: ResumeData) => {
         try {
             const response = await axios.post(`${API_URL}/api/resume`, resumeData, {
@@ -26,21 +25,33 @@ export const ApiService = {
         }
     },
 
-    // Get most recent resume
-    getResume: async () => {
+    getResume: async (versionName?: string) => {
+        try {
+            const url = versionName
+                ? `${API_URL}/api/resume?versionName=${encodeURIComponent(versionName)}`
+                : `${API_URL}/api/resume`;
+            const response = await axios.get(url, {
+                headers: getAuthHeaders(),
+            });
+            if (Array.isArray(response.data) && response.data.length > 0) {
+                return response.data[0];
+            }
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching resume:', error);
+            return null;
+        }
+    },
+
+    getResumes: async () => {
         try {
             const response = await axios.get(`${API_URL}/api/resume`, {
                 headers: getAuthHeaders(),
             });
-            // Assuming backend returns array, pick first (latest)
-            if (Array.isArray(response.data) && response.data.length > 0) {
-                return response.data[0];
-            }
-            return null;
+            return Array.isArray(response.data) ? response.data : [];
         } catch (error) {
-            console.error('Error fetching name:', error);
-            // Return null if not found or error, to allow App to use default/sample
-            return null;
+            console.error('Error fetching resumes:', error);
+            return [];
         }
     },
 };

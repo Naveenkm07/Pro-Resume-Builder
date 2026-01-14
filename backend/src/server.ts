@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth';
 import uploadRoutes from './routes/upload';
 import resumeRoutes from './routes/resume';
+import brandAnalyzerRoutes from './routes/brand-analyzer';
+import projectsExtractorRoutes from './routes/projects-extractor';
 import { authenticate } from './middleware/auth';
 
 const app = express();
@@ -77,6 +79,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes); // Upload might be public or protected, leaving as is for now
 app.use('/api/resume', authenticate, resumeRoutes);
+app.use('/api/brand-analyzer', brandAnalyzerRoutes);
+app.use('/api/projects-extractor', projectsExtractorRoutes);
 
 // 404 handler
 app.use((_, res) => {

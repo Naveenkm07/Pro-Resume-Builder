@@ -4,12 +4,20 @@ import TemplateSwitcher, { TemplateType } from "./TemplateSwitcher";
 import Upload from "./Upload";
 import Card from "./ui/Card";
 import Button from "./ui/Button";
+import AutocompleteInput from "./ui/AutocompleteInput";
 import ThemePicker from "./ThemePicker";
 import ThemeSwitcher from "./ThemeSwitcher";
 import A4Preview from "./A4Preview";
+import PersonalBrandingAnalyzer from "./PersonalBrandingAnalyzer";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiService } from "../services/api";
 import AuthService from "../services/auth";
+import { normalizeSkills, type SkillNormalizationResult } from "../services/skills";
+import {
+  analyzeBulletImpact,
+  applyBulletSuggestion,
+  parseBulletLines,
+} from "../services/bulletImpact";
 
 type EditorPanelProps = {
   resume: ResumeData;
@@ -90,7 +98,14 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(["profile", "summary", "experience", "education", "projects"])
   );
+  const [skillsCleanerOpen, setSkillsCleanerOpen] = useState(false);
+  const [skillsCleanerResult, setSkillsCleanerResult] = useState<SkillNormalizationResult | null>(null);
   const [developerMode, setDeveloperMode] = useState(false);
+  const [bulletCoachOpen, setBulletCoachOpen] = useState<{
+    section: "experience" | "projects";
+    parentIndex: number;
+    lineIndex: number;
+  } | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -872,6 +887,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                         onChange={() => {}}
                         resume={resume}
                         previewOnly
+                        sectionOrder={resume.sectionOrder}
                       />
                     </A4Preview>
                   </div>
@@ -2179,6 +2195,98 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                 style={{ backgroundColor: '#111111', color: '#fafafa' }}
                 placeholder="React, Node.js, Python..."
               />
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const result = normalizeSkills(resume.skills);
+                    setSkillsCleanerResult(result);
+                    setSkillsCleanerOpen(true);
+                  }}
+                >
+                  Clean skills
+                </Button>
+
+                {skillsCleanerOpen && skillsCleanerResult && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSkillsCleanerOpen(false);
+                    }}
+                  >
+                    Close
+                  </Button>
+                )}
+
+                {skillsCleanerOpen && skillsCleanerResult ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={skillsCleanerResult.changes.length === 0}
+                    onClick={() => {
+                      onResumeChange({ ...resume, skills: skillsCleanerResult.skills });
+                      setSkillsCleanerOpen(false);
+                    }}
+                  >
+                    Apply
+                  </Button>
+                ) : null}
+              </div>
+
+              {skillsCleanerOpen && skillsCleanerResult && (
+                <div className="mt-4 p-4 rounded-lg border border-dark-border bg-dark-card">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-white">Skill cleanup suggestions</p>
+                      <p className="text-[11px] text-gray-400">
+                        {skillsCleanerResult.changes.length === 0
+                          ? "No duplicates or aliases detected."
+                          : `${skillsCleanerResult.changes.length} suggested change(s) · ${resume.skills.length} -> ${skillsCleanerResult.skills.length}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {skillsCleanerResult.changes.length > 0 ? (
+                    <div className="mt-3 max-h-56 overflow-auto space-y-2">
+                      {skillsCleanerResult.changes.map((c, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-4">
+                          <div className="text-xs text-gray-200">
+                            <span className="font-semibold text-white">{c.from}</span>
+                            <span className="text-gray-400"> {'->'} </span>
+                            <span className="font-semibold text-white">{c.to}</span>
+                          </div>
+                          <div className="text-[10px] text-gray-400 uppercase">
+                            {c.action === 'remove_duplicate' ? 'duplicate' : c.method}
+                            {typeof c.score === 'number' ? ` (${c.score.toFixed(2)})` : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold text-gray-300 mb-2">Result</p>
+                    <div className="flex flex-wrap gap-2">
+                      {skillsCleanerResult.skills.map((skill, idx) => (
+                        <span
+                          key={`${skill}-${idx}`}
+                          className="px-3 py-1 border rounded-full text-xs text-white"
+                          style={{
+                            background: `linear-gradient(135deg, var(--color-primary)20 0%, var(--color-secondary)20 100%)`,
+                            borderColor: `var(--color-primary)50`,
+                          }}
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2 mt-4">
                 {resume.skills.map((skill, idx) => (
                   <span
@@ -2258,6 +2366,113 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                     className="w-full px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                     style={{ backgroundColor: '#1a1a1a', color: '#fafafa' }}
                   />
+
+                  {parseBulletLines(exp.desc).length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {parseBulletLines(exp.desc).map((line) => {
+                        const analysis = analyzeBulletImpact(line.content);
+                        const isOpen =
+                          bulletCoachOpen?.section === "experience" &&
+                          bulletCoachOpen.parentIndex === idx &&
+                          bulletCoachOpen.lineIndex === line.lineIndex;
+
+                        const colorClass =
+                          analysis.score >= 80
+                            ? "bg-green-500"
+                            : analysis.score >= 60
+                            ? "bg-yellow-500"
+                            : "bg-red-500";
+
+                        return (
+                          <div
+                            key={`exp-${idx}-line-${line.lineIndex}`}
+                            className="p-3 rounded-lg border border-dark-border bg-dark-card/40"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-2 min-w-0">
+                                <span className={`mt-1 h-2 w-2 rounded-full ${colorClass}`} />
+                                <div className="min-w-0">
+                                  <div className="text-xs text-gray-200 break-words">
+                                    {line.content}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-gray-400">
+                                    Impact: {analysis.score}/100
+                                    {analysis.issues.includes("missing_action_verb")
+                                      ? " · Weak verb"
+                                      : ""}
+                                    {analysis.issues.includes("missing_metric")
+                                      ? " · Missing metric"
+                                      : ""}
+                                    {analysis.issues.includes("missing_result")
+                                      ? " · Missing result"
+                                      : ""}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {analysis.suggestions.length > 0 ? (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBulletCoachOpen(
+                                      isOpen
+                                        ? null
+                                        : {
+                                            section: "experience",
+                                            parentIndex: idx,
+                                            lineIndex: line.lineIndex,
+                                          }
+                                    );
+                                  }}
+                                >
+                                  Add metrics suggestions
+                                </Button>
+                              ) : (
+                                <span className="text-[11px] text-gray-400">Looks strong</span>
+                              )}
+                            </div>
+
+                            {isOpen && analysis.suggestions.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                {analysis.suggestions.map((sugg, sIdx) => (
+                                  <div
+                                    key={`exp-${idx}-line-${line.lineIndex}-s-${sIdx}`}
+                                    className="p-2 rounded-md border border-dark-border bg-dark-surface/60"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="text-xs text-gray-200 break-words">
+                                        {sugg.mode === "replace"
+                                          ? sugg.text
+                                          : `${line.content}${sugg.text}`}
+                                      </div>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                          const nextDesc = applyBulletSuggestion(
+                                            exp.desc,
+                                            line.lineIndex,
+                                            sugg
+                                          );
+                                          const newExp = [...resume.experience];
+                                          newExp[idx] = { ...exp, desc: nextDesc };
+                                          onResumeChange({ ...resume, experience: newExp });
+                                          setBulletCoachOpen(null);
+                                        }}
+                                      >
+                                        Apply
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -2328,6 +2543,213 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             </div>
           )}
         </Card>
+
+        {/* Projects Card */}
+        <Card glow={expandedSections.has("projects") ? "green" : false}>
+          <button
+            type="button"
+            onClick={() => toggleSection("projects")}
+            className="w-full flex items-center justify-between"
+          >
+            <h3 className="text-lg font-semibold text-white">Projects</h3>
+            <svg
+              className={`w-5 h-5 text-gray-300 transition-transform ${
+                expandedSections.has("projects") ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expandedSections.has("projects") && (
+            <div className="mt-6 pt-6 border-t border-dark-border animate-fade-in space-y-4">
+              {(resume.projects || []).map((proj, idx) => (
+                <div key={idx} className="p-4 bg-dark-surface rounded-lg border border-dark-border space-y-3">
+                  <input
+                    type="text"
+                    value={proj.name}
+                    onChange={(e) => {
+                      const projects = resume.projects || [];
+                      const next = [...projects];
+                      next[idx] = { ...proj, name: e.target.value };
+                      onResumeChange({ ...resume, projects: next });
+                    }}
+                    placeholder="Project name"
+                    className="w-full px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    style={{ backgroundColor: '#1a1a1a', color: '#fafafa' }}
+                  />
+                  <textarea
+                    value={proj.description}
+                    onChange={(e) => {
+                      const projects = resume.projects || [];
+                      const next = [...projects];
+                      next[idx] = { ...proj, description: e.target.value };
+                      onResumeChange({ ...resume, projects: next });
+                    }}
+                    placeholder="Short description (what you built, impact, results)"
+                    rows={3}
+                    className="w-full px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    style={{ backgroundColor: '#1a1a1a', color: '#fafafa' }}
+                  />
+
+                  {parseBulletLines(proj.description).length > 0 && (
+                    <div className="space-y-2">
+                      {parseBulletLines(proj.description).map((line) => {
+                        const analysis = analyzeBulletImpact(line.content);
+                        const isOpen =
+                          bulletCoachOpen?.section === "projects" &&
+                          bulletCoachOpen.parentIndex === idx &&
+                          bulletCoachOpen.lineIndex === line.lineIndex;
+
+                        const colorClass =
+                          analysis.score >= 80
+                            ? "bg-green-500"
+                            : analysis.score >= 60
+                            ? "bg-yellow-500"
+                            : "bg-red-500";
+
+                        return (
+                          <div
+                            key={`proj-${idx}-line-${line.lineIndex}`}
+                            className="p-3 rounded-lg border border-dark-border bg-dark-card/40"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-2 min-w-0">
+                                <span className={`mt-1 h-2 w-2 rounded-full ${colorClass}`} />
+                                <div className="min-w-0">
+                                  <div className="text-xs text-gray-200 break-words">
+                                    {line.content}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-gray-400">
+                                    Impact: {analysis.score}/100
+                                    {analysis.issues.includes("missing_action_verb")
+                                      ? " · Weak verb"
+                                      : ""}
+                                    {analysis.issues.includes("missing_metric")
+                                      ? " · Missing metric"
+                                      : ""}
+                                    {analysis.issues.includes("missing_result")
+                                      ? " · Missing result"
+                                      : ""}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {analysis.suggestions.length > 0 ? (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setBulletCoachOpen(
+                                      isOpen
+                                        ? null
+                                        : {
+                                            section: "projects",
+                                            parentIndex: idx,
+                                            lineIndex: line.lineIndex,
+                                          }
+                                    );
+                                  }}
+                                >
+                                  Add metrics suggestions
+                                </Button>
+                              ) : (
+                                <span className="text-[11px] text-gray-400">Looks strong</span>
+                              )}
+                            </div>
+
+                            {isOpen && analysis.suggestions.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                {analysis.suggestions.map((sugg, sIdx) => (
+                                  <div
+                                    key={`proj-${idx}-line-${line.lineIndex}-s-${sIdx}`}
+                                    className="p-2 rounded-md border border-dark-border bg-dark-surface/60"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="text-xs text-gray-200 break-words">
+                                        {sugg.mode === "replace"
+                                          ? sugg.text
+                                          : `${line.content}${sugg.text}`}
+                                      </div>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                          const nextDesc = applyBulletSuggestion(
+                                            proj.description,
+                                            line.lineIndex,
+                                            sugg
+                                          );
+                                          const projects = resume.projects || [];
+                                          const next = [...projects];
+                                          next[idx] = { ...proj, description: nextDesc };
+                                          onResumeChange({ ...resume, projects: next });
+                                          setBulletCoachOpen(null);
+                                        }}
+                                      >
+                                        Apply
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <AutocompleteInput
+                      value={proj.techStack || ""}
+                      onChange={(nextValue) => {
+                        const projects = resume.projects || [];
+                        const next = [...projects];
+                        next[idx] = { ...proj, techStack: nextValue };
+                        onResumeChange({ ...resume, projects: next });
+                      }}
+                      placeholder="Tech stack (Python, React, SQL...)"
+                      className="px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={proj.link || ""}
+                      onChange={(e) => {
+                        const projects = resume.projects || [];
+                        const next = [...projects];
+                        next[idx] = { ...proj, link: e.target.value };
+                        onResumeChange({ ...resume, projects: next });
+                      }}
+                      placeholder="GitHub / Demo link (optional)"
+                      className="px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const projects = resume.projects || [];
+                    const next = [
+                      ...projects,
+                      { name: '', description: '', techStack: '', link: '' },
+                    ];
+                    onResumeChange({ ...resume, projects: next });
+                  }}
+                >
+                  Add project
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Personal Branding Analyzer */}
+        <PersonalBrandingAnalyzer resume={resume} />
       </div>
     </div>
   );

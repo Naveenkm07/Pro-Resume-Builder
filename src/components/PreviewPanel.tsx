@@ -48,12 +48,15 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
         <div className="max-w-4xl mx-auto flex justify-center animate-float">
           <div className="w-full max-w-[210mm] relative z-10">
             <A4Preview>
-              <TemplateSwitcher
-                selected={template}
-                onChange={onTemplateChange}
-                resume={resume}
-                previewOnly
-              />
+              <div className="p-4">
+                <TemplateSwitcher
+                  selected={template}
+                  onChange={onTemplateChange}
+                  resume={resume}
+                  previewOnly
+                  sectionOrder={resume.sectionOrder}
+                />
+              </div>
             </A4Preview>
           </div>
         </div>

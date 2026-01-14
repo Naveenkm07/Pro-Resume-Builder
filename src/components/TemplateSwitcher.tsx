@@ -11,6 +11,7 @@ type TemplateSwitcherProps = {
   onChange: (template: TemplateType) => void;
   resume: ResumeData;
   previewOnly?: boolean;
+  sectionOrder?: string[];
 };
 
 const TemplateSwitcher: React.FC<TemplateSwitcherProps> = ({
@@ -18,23 +19,24 @@ const TemplateSwitcher: React.FC<TemplateSwitcherProps> = ({
   onChange,
   resume,
   previewOnly = false,
+  sectionOrder,
 }) => {
   const renderTemplate = () => {
     switch (selected) {
       case "professional":
       case "executive":
       case "academic":
-        return <ProfessionalTemplate resume={resume} />;
+        return <ProfessionalTemplate resume={resume} sectionOrder={sectionOrder} />;
       case "creative":
       case "portfolio":
       case "dynamic":
-        return <CreativeTemplate resume={resume} />;
+        return <CreativeTemplate resume={resume} sectionOrder={sectionOrder} />;
       case "modern":
       case "technical":
       case "bold":
       case "clean":
       case "sleek":
-        return <ModernTemplate resume={resume} />;
+        return <ModernTemplate resume={resume} sectionOrder={sectionOrder} />;
       case "minimal":
       case "compact":
       case "elegant":
@@ -47,10 +49,10 @@ const TemplateSwitcher: React.FC<TemplateSwitcherProps> = ({
       case "vivid":
       case "smart":
       case "elite":
-        return <MinimalTemplate resume={resume} />;
+        return <MinimalTemplate resume={resume} sectionOrder={sectionOrder} />;
       case "simple":
       default:
-        return <SimpleTemplate resume={resume} />;
+        return <SimpleTemplate resume={resume} sectionOrder={sectionOrder} />;
     }
   };
 
@@ -100,68 +102,97 @@ const TemplateSwitcher: React.FC<TemplateSwitcherProps> = ({
 };
 
 // Simple Template Component
-const SimpleTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
+const SimpleTemplate: React.FC<{ resume: ResumeData; sectionOrder?: string[] }> = ({ resume, sectionOrder }) => {
+  const order = sectionOrder || ['summary', 'skills', 'experience', 'education', 'projects'];
+  const renderSection = (section: string) => {
+    switch (section) {
+      case 'summary':
+        return resume.summary && (
+          <section key="summary" className="mb-4">
+            <h2 className="text-sm font-semibold text-slate-700 mb-1">Summary</h2>
+            <p className="text-xs text-slate-600">{resume.summary}</p>
+          </section>
+        );
+      case 'skills':
+        return resume.skills.length > 0 && (
+          <section key="skills" className="mb-4">
+            <h2 className="text-sm font-semibold text-slate-700 mb-1">Skills</h2>
+            <p className="text-xs text-slate-600">{resume.skills.join(", ")}</p>
+          </section>
+        );
+      case 'experience':
+        return resume.experience.length > 0 && (
+          <section key="experience" className="mb-4">
+            <h2 className="text-sm font-semibold text-slate-700 mb-1">
+              Experience
+            </h2>
+            {resume.experience.map((exp, idx) => (
+              <div key={idx} className="mb-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-semibold text-sm">{exp.title}</div>
+                    <div className="text-xs text-slate-600">{exp.company}</div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mb-0.5">
+                    {exp.from} - {exp.to || "Present"}
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600 mt-1">{exp.desc}</p>
+              </div>
+            ))}
+          </section>
+        );
+      case 'education':
+        return resume.education.length > 0 && (
+          <section key="education">
+            <h2 className="text-sm font-semibold text-slate-700 mb-1">Education</h2>
+            {resume.education.map((edu, idx) => (
+              <div key={idx} className="mb-2">
+                <div className="font-semibold text-sm">{edu.degree}</div>
+                <div className="text-xs text-slate-600">{edu.college}</div>
+                <div className="text-[10px] text-slate-500">{edu.year}</div>
+              </div>
+            ))}
+          </section>
+        );
+      case 'projects':
+        return resume.projects.length > 0 && (
+          <section key="projects" className="mb-4">
+            <h2 className="text-sm font-semibold text-slate-700 mb-1">Projects</h2>
+            {resume.projects.map((proj, idx) => (
+              <div key={idx} className="mb-3">
+                <div className="font-semibold text-sm">{proj.name}</div>
+                <p className="text-xs text-slate-600 mt-1">{proj.description}</p>
+                {proj.techStack && (
+                  <p className="text-[10px] text-slate-500 mt-1">Tech Stack: {proj.techStack}</p>
+                )}
+                {proj.link && (
+                  <a href={proj.link} className="text-[10px] text-blue-600 hover:underline mt-1 block">
+                    {proj.link}
+                  </a>
+                )}
+              </div>
+            ))}
+          </section>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="h-full p-8 text-slate-900 text-sm">
       <header className="border-b border-slate-200 pb-4 mb-4">
         <h1 className="text-2xl font-bold">{resume.name}</h1>
         <p className="mt-1 text-xs text-slate-500">{resume.contact}</p>
       </header>
-
-      {resume.summary && (
-        <section className="mb-4">
-          <h2 className="text-sm font-semibold text-slate-700 mb-1">Summary</h2>
-          <p className="text-xs text-slate-600">{resume.summary}</p>
-        </section>
-      )}
-
-      {resume.skills.length > 0 && (
-        <section className="mb-4">
-          <h2 className="text-sm font-semibold text-slate-700 mb-1">Skills</h2>
-          <p className="text-xs text-slate-600">{resume.skills.join(", ")}</p>
-        </section>
-      )}
-
-      {resume.experience.length > 0 && (
-        <section className="mb-4">
-          <h2 className="text-sm font-semibold text-slate-700 mb-1">
-            Experience
-          </h2>
-          {resume.experience.map((exp, idx) => (
-            <div key={idx} className="mb-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-semibold text-sm">{exp.title}</div>
-                  <div className="text-xs text-slate-600">{exp.company}</div>
-                </div>
-                <div className="text-[10px] text-slate-500 mb-0.5">
-                  {exp.from} - {exp.to || "Present"}
-                </div>
-              </div>
-              <p className="text-xs text-slate-600 mt-1">{exp.desc}</p>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {resume.education.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-slate-700 mb-1">Education</h2>
-          {resume.education.map((edu, idx) => (
-            <div key={idx} className="mb-2">
-              <div className="font-semibold text-sm">{edu.degree}</div>
-              <div className="text-xs text-slate-600">{edu.college}</div>
-              <div className="text-[10px] text-slate-500">{edu.year}</div>
-            </div>
-          ))}
-        </section>
-      )}
+      {order.map(renderSection)}
     </div>
   );
 };
 
 // Professional Template Component
-const ProfessionalTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
+const ProfessionalTemplate: React.FC<{ resume: ResumeData; sectionOrder?: string[] }> = ({ resume }) => {
   return (
     <div className="h-full flex">
       <aside className="bg-slate-900 text-white p-6 text-xs w-1/3">
@@ -219,6 +250,28 @@ const ProfessionalTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
           </section>
         )}
 
+        {resume.projects.length > 0 && (
+          <section className="mb-6">
+            <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-600 mb-2">
+              Projects
+            </h2>
+            {resume.projects.map((proj, idx) => (
+              <div key={idx} className="mb-4">
+                <div className="font-semibold">{proj.name}</div>
+                <p className="text-xs text-slate-600 mt-1">{proj.description}</p>
+                {proj.techStack && (
+                  <p className="text-[10px] text-slate-500 mt-1">Tech Stack: {proj.techStack}</p>
+                )}
+                {proj.link && (
+                  <a href={proj.link} className="text-[10px] text-blue-600 hover:underline mt-1 block">
+                    {proj.link}
+                  </a>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+
         {resume.education.length > 0 && (
           <section>
             <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-600 mb-2">
@@ -239,7 +292,7 @@ const ProfessionalTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
 };
 
 // Creative Template Component
-const CreativeTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
+const CreativeTemplate: React.FC<{ resume: ResumeData; sectionOrder?: string[] }> = ({ resume }) => {
   return (
     <div className="relative h-full p-8 text-slate-900 text-sm">
       <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500"></div>
@@ -271,6 +324,28 @@ const CreativeTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
                   {exp.from} - {exp.to || "Present"}
                 </div>
                 <p className="text-xs text-slate-600 mt-1">{exp.desc}</p>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {resume.projects.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-slate-700 mb-3 border-b-2 border-pink-500 pb-1">
+              Projects
+            </h2>
+            {resume.projects.map((proj, idx) => (
+              <div key={idx} className="mb-4">
+                <div className="font-semibold text-slate-800">{proj.name}</div>
+                <p className="text-xs text-slate-600 mt-1">{proj.description}</p>
+                {proj.techStack && (
+                  <p className="text-[10px] text-slate-500 mt-1">Tech Stack: {proj.techStack}</p>
+                )}
+                {proj.link && (
+                  <a href={proj.link} className="text-[10px] text-blue-600 hover:underline mt-1 block">
+                    {proj.link}
+                  </a>
+                )}
               </div>
             ))}
           </section>
@@ -314,7 +389,7 @@ const CreativeTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
 };
 
 // Modern Template - two-column with strong accent bar
-const ModernTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
+const ModernTemplate: React.FC<{ resume: ResumeData; sectionOrder?: string[] }> = ({ resume }) => {
   return (
     <div className="relative h-full text-slate-900 text-sm bg-slate-50">
       <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500" />
@@ -392,6 +467,26 @@ const ModernTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
                 ))}
               </section>
             )}
+
+            {resume.projects.length > 0 && (
+              <section>
+                <h2 className="text-xs font-semibold tracking-wide uppercase text-slate-500 mb-2">Projects</h2>
+                {resume.projects.map((proj, idx) => (
+                  <div key={idx} className="mb-3 pb-2 border-b border-slate-200 last:border-0 last:pb-0">
+                    <div className="text-sm font-semibold text-slate-900">{proj.name}</div>
+                    <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">{proj.description}</p>
+                    {proj.techStack && (
+                      <p className="text-[10px] text-slate-500 mt-1">Tech Stack: {proj.techStack}</p>
+                    )}
+                    {proj.link && (
+                      <a href={proj.link} className="text-[10px] text-blue-600 hover:underline mt-1 block">
+                        {proj.link}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </section>
+            )}
           </main>
         </div>
       </div>
@@ -400,7 +495,7 @@ const ModernTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
 };
 
 // Minimal Template - ultra-clean single-column
-const MinimalTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
+const MinimalTemplate: React.FC<{ resume: ResumeData; sectionOrder?: string[] }> = ({ resume }) => {
   return (
     <div className="h-full bg-white text-slate-900">
       <div className="px-10 py-8 h-full flex flex-col">
@@ -431,6 +526,28 @@ const MinimalTemplate: React.FC<{ resume: ResumeData }> = ({ resume }) => {
                     </div>
                     <span className="text-[11px] text-slate-600">{exp.company}</span>
                     <p className="text-[11px] text-slate-700 mt-0.5 leading-relaxed">{exp.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {resume.projects.length > 0 && (
+            <section>
+              <h2 className="text-xs font-semibold tracking-wide uppercase text-slate-500 mb-2">Projects</h2>
+              <div className="space-y-3">
+                {resume.projects.map((proj, idx) => (
+                  <div key={idx} className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">{proj.name}</span>
+                    <p className="text-[11px] text-slate-700 mt-0.5 leading-relaxed">{proj.description}</p>
+                    {proj.techStack && (
+                      <p className="text-[10px] text-slate-500">Tech Stack: {proj.techStack}</p>
+                    )}
+                    {proj.link && (
+                      <a href={proj.link} className="text-[10px] text-blue-600 hover:underline">
+                        {proj.link}
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>

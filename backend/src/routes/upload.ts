@@ -32,6 +32,9 @@ const fileSchema = z.object({
     "application/octet-stream",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "text/html",
+    "text/rtf",
   ]),
 });
 
@@ -322,6 +325,36 @@ const parseDocxFile = async (filePath: string): Promise<string> => {
   return result.value ?? "";
 };
 
+const parseTextFile = async (filePath: string, ext: string): Promise<string> => {
+  let raw = "";
+  try {
+    raw = await fs.promises.readFile(filePath, "utf8");
+  } catch {
+    return "";
+  }
+
+  const lowerExt = ext.toLowerCase();
+
+  // Basic HTML to text: strip scripts/styles then tags.
+  if (lowerExt === ".html" || lowerExt === ".htm") {
+    const noScript = raw.replace(/<script[\s\S]*?<\/script>/gi, " ");
+    const noStyle = noScript.replace(/<style[\s\S]*?<\/style>/gi, " ");
+    return noStyle.replace(/<[^>]+>/g, " ");
+  }
+
+  // Very naive RTF to text: strip control words and braces.
+  if (lowerExt === ".rtf") {
+    return raw
+      .replace(/\\par[d]?/g, "\n")
+      .replace(/\\'[0-9a-fA-F]{2}/g, " ")
+      .replace(/\\[a-zA-Z]+-?\d* ?/g, "")
+      .replace(/[{}]/g, " ");
+  }
+
+  // Plain text or unknown text-like.
+  return raw;
+};
+
 router.post("/", upload.single("resume"), async (req, res) => {
   const file = req.file;
 
@@ -330,29 +363,39 @@ router.post("/", upload.single("resume"), async (req, res) => {
   }
 
   const ext = path.extname(file.originalname).toLowerCase();
-  const isPdf = file.mimetype === "application/pdf" || file.mimetype === "application/x-pdf" || ext === ".pdf";
+  const mime = file.mimetype;
+  const isPdf = mime === "application/pdf" || mime === "application/x-pdf" || ext === ".pdf";
   const isDocx =
-    file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     ext === ".docx";
+  const isText =
+    mime === "text/plain" ||
+    mime === "text/html" ||
+    mime === "text/rtf" ||
+    ext === ".txt" ||
+    ext === ".html" ||
+    ext === ".htm" ||
+    ext === ".rtf";
 
   const validation = fileSchema.safeParse({ mimetype: file.mimetype });
-  if (!validation.success && !isPdf && !isDocx) {
+  if (!validation.success) {
     // clean up saved invalid file
     try {
       fs.unlinkSync(file.path);
     } catch {
       // ignore
     }
-    return res.status(400).json({ error: "Invalid file type. Only PDF or DOCX allowed." });
+    return res.status(400).json({ error: "Invalid file type. Allowed types: PDF, DOC, DOCX, HTML, RTF, TXT." });
   }
 
   try {
     let text = "";
     if (isPdf) {
       text = await parsePdfFile(file.path);
-    } else {
-      // assume DOCX
+    } else if (isDocx) {
       text = await parseDocxFile(file.path);
+    } else if (isText) {
+      text = await parseTextFile(file.path, ext);
     }
 
     let resume: ResumeData;
@@ -378,7 +421,12 @@ router.post("/", upload.single("resume"), async (req, res) => {
       // ignore errors
     });
 
-    return res.json(resume);
+    return res.json({
+      ...resume,
+      extractedText: text,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+    });
   } catch (err) {
     console.error("Local parse error:", err);
     const baseName = path.basename(file.originalname, path.extname(file.originalname));
@@ -399,7 +447,12 @@ router.post("/", upload.single("resume"), async (req, res) => {
     });
 
     // Return fallback instead of HTTP 500 so the UI can still proceed
-    return res.json(fallback);
+    return res.json({
+      ...fallback,
+      extractedText: "",
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+    });
   }
 });
 
