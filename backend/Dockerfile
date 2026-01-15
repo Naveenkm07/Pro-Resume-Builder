@@ -6,19 +6,22 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including dev dependencies for TypeScript compilation)
+RUN npm ci
 
 # Copy source files and config
 COPY tsconfig.json ./
 COPY src ./src
 
-# Install dev dependencies for ts-node
-RUN npm install --save-dev ts-node typescript
+# Build/compile TypeScript to JavaScript
+RUN npm run build
+
+# Remove dev dependencies for smaller final image (optional)
+RUN npm ci --only=production
 
 # Create uploads directory
 RUN mkdir -p uploads
 
 EXPOSE 3001
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "start"]
