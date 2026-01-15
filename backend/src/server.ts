@@ -34,6 +34,9 @@ const allowedOrigins = Array.from(
       'http://127.0.0.1:5174',
       'http://127.0.0.1:5175',
       'http://127.0.0.1:5176',
+        'https://proresume-git-main-naveenkm07s-projects.vercel.app',
+        'https://pro-resume-builder-rosy.vercel.app',
+        'https://proresume.app',
     ].filter(Boolean)
   )
 );
