@@ -133,4 +133,33 @@ router.post('/', async (req: any, res) => {
     }
 });
 
+// DELETE /api/resume?versionName=... - Delete a specific resume version
+router.delete('/', async (req: any, res) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+        const versionNameRaw = typeof req.query?.versionName === 'string' ? req.query.versionName.trim() : '';
+        if (!versionNameRaw) {
+            return res.status(400).json({ error: 'versionName is required' });
+        }
+
+        const versionName = versionNameRaw;
+        const query =
+            versionName === 'Base'
+                ? { user: userId, $or: [{ versionName: 'Base' }, { versionName: { $exists: false } }] }
+                : { user: userId, versionName };
+
+        const deleted = await Resume.findOneAndDelete(query);
+        if (!deleted) {
+            return res.status(404).json({ error: 'Resume version not found' });
+        }
+
+        return res.json({ message: 'Deleted', versionName });
+    } catch (err) {
+        console.error('Error deleting resume:', err);
+        return res.status(500).json({ error: 'Failed to delete resume' });
+    }
+});
+
 export default router;

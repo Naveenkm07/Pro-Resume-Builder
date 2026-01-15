@@ -54,4 +54,17 @@ export const ApiService = {
             return [];
         }
     },
+
+    deleteResumeVersion: async (versionName: string) => {
+        try {
+            const response = await axios.delete(`${API_URL}/api/resume`, {
+                params: { versionName },
+                headers: getAuthHeaders(),
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting resume:', error);
+            throw error;
+        }
+    },
 };

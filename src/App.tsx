@@ -81,6 +81,39 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleDeleteVersion = async (versionName: string) => {
+    const normalized = versionName || 'Base';
+
+    if (resumeVersions.length <= 1) {
+      alert('You must keep at least one version.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete version "${normalized}"? This cannot be undone.`);
+    if (!confirmed) return;
+
+    const nextVersions = resumeVersions.filter((v) => (v.versionName || 'Base') !== normalized);
+
+    try {
+      if (user) {
+        await ApiService.deleteResumeVersion(normalized);
+      }
+
+      setResumeVersions(nextVersions);
+
+      if (activeVersionName === normalized) {
+        const fallback = nextVersions.find((v) => (v.versionName || 'Base') === 'Base') ?? nextVersions[0];
+        if (fallback) {
+          const fallbackName = fallback.versionName || 'Base';
+          setActiveVersionName(fallbackName);
+          setResume(fallback);
+        }
+      }
+    } catch (error) {
+      alert('Failed to delete version.');
+    }
+  };
+
   const handleCreateVersion = () => {
     const roleOptions = Object.entries(ROLE_TEMPLATES).map(([id, template]) => ({
       id,
@@ -204,20 +237,44 @@ const AppContent: React.FC = () => {
           <div className="flex-1 flex flex-col overflow-hidden ml-16">
             {resumeVersions.length > 0 && (
               <div className="border-b border-dark-border bg-dark-surface px-4 py-2 flex items-center gap-2 overflow-x-auto">
-                {resumeVersions.map((v) => (
-                  <button
-                    key={v.versionName || 'Base'}
-                    type="button"
-                    onClick={() => handleVersionSwitch(v.versionName || 'Base')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
-                      activeVersionName === (v.versionName || 'Base')
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'bg-dark-card text-gray-300 hover:bg-dark-border hover:text-white'
-                    }`}
-                  >
-                    {v.versionName || 'Base'}
-                  </button>
-                ))}
+                {resumeVersions.map((v) => {
+                  const label = v.versionName || 'Base';
+                  const isActive = activeVersionName === label;
+                  const canDelete = resumeVersions.length > 1;
+
+                  return (
+                    <div key={label} className="flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => handleVersionSwitch(label)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
+                          isActive
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-dark-card text-gray-300 hover:bg-dark-border hover:text-white'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteVersion(label);
+                        }}
+                        disabled={!canDelete}
+                        className={`ml-1 px-2 py-1 text-xs rounded-md transition-all ${
+                          canDelete
+                            ? 'bg-dark-card text-gray-400 hover:bg-red-500/20 hover:text-red-300'
+                            : 'bg-dark-card text-gray-600 cursor-not-allowed'
+                        }`}
+                        aria-label={`Delete version ${label}`}
+                        title={canDelete ? `Delete ${label}` : 'Cannot delete the last version'}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
                 <button
                   type="button"
                   onClick={handleCreateVersion}
