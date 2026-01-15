@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { ResumeData } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5173';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // Helper to get headers
 const getAuthHeaders = () => {

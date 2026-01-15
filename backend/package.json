@@ -4,7 +4,8 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "test": "echo \"No tests configured\" && exit 0",
     "lint": "eslint src --ext .ts --max-warnings=0"
