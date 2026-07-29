@@ -2,6 +2,9 @@
   "name": "resume-builder-mvp",
   "version": "1.0.1",
   "private": true,
+  "workspaces": [
+    "backend"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "node node_modules/vite/bin/vite.js build",

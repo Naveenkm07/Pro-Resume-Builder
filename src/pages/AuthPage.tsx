@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import EmailSignUp from '../components/EmailSignUp';
 import EmailSignIn from '../components/EmailSignIn';
-import GoogleSignIn from '../components/GoogleSignIn';
 
 const AuthPage: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -24,19 +23,6 @@ const AuthPage: React.FC = () => {
         <div className="mb-6">
           {isSignUp ? <EmailSignUp /> : <EmailSignIn />}
         </div>
-
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with</span>
-          </div>
-        </div>
-
-        {/* Google Sign In */}
-        <GoogleSignIn />
 
         {/* Toggle Sign Up/Sign In */}
         <div className="mt-6 text-center">

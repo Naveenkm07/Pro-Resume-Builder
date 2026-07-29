@@ -4,7 +4,6 @@ import AuthService, { User } from '../services/auth';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: () => void;
   signOut: () => void;
   isAuthenticated: boolean;
 }
@@ -62,10 +61,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await checkAuth();
   };
 
-  const signIn = () => {
-    AuthService.initiateGoogleLogin();
-  };
-
   const signOut = () => {
     AuthService.logout();
     setUser(null);
@@ -76,7 +71,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         user,
         loading,
-        signIn,
         signOut,
         isAuthenticated: !!user,
       }}

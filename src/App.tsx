@@ -9,7 +9,6 @@ import PreviewPanel from "./components/PreviewPanel";
 import About from "./components/About";
 import StartupLandingPage from "./components/StartupLandingPage";
 import ConversionLandingPage from "./components/ConversionLandingPage";
-import AuthCallback from "./pages/AuthCallback";
 import AuthPage from "./pages/AuthPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
@@ -332,7 +331,6 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
         <Route path="/" element={<AppContent />} />

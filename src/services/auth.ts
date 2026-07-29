@@ -29,60 +29,6 @@ class AuthService {
   }
 
   /**
-   * Initiate Google OAuth login
-   * Redirects user to Google OAuth consent screen
-   */
-  initiateGoogleLogin(): void {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/auth/callback`;
-    const scope = 'openid email profile';
-    const responseType = 'code';
-
-    // Build Google OAuth URL
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `response_type=${responseType}&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `access_type=offline&` +
-      `prompt=consent`;
-
-    // Redirect to Google OAuth
-    window.location.href = authUrl;
-  }
-
-  /**
-   * Handle OAuth callback
-   * Exchange authorization code for ID token
-   */
-  async handleCallback(code: string): Promise<AuthResponse> {
-    try {
-      // Exchange code for ID token via backend
-      const response = await axios.post<AuthResponse>(
-        `${API_URL}/api/auth/google/callback`,
-        { code },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      // Store token in localStorage
-      localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-      // Dispatch event to update auth context
-      window.dispatchEvent(new Event('authUpdate'));
-
-      return response.data;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Authentication failed';
-      throw new Error(errorMessage);
-    }
-  }
-
-  /**
    * Get current user from token
    */
   async getCurrentUser(): Promise<User | null> {

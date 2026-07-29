@@ -1,11 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUser extends Document {
-  googleId?: string;
   email: string;
-  password?: string; // Hashed password for email/password auth
+  password: string;
   name: string;
-  picture?: string;
   emailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -13,12 +11,7 @@ export interface IUser extends Document {
 
 const UserSchema: Schema = new Schema(
   {
-    googleId: {
-      type: String,
-      unique: true,
-      sparse: true, // Allow null values, but enforce uniqueness when present
-      index: true,
-    },
+
     email: {
       type: String,
       required: true,
@@ -29,15 +22,13 @@ const UserSchema: Schema = new Schema(
     },
     password: {
       type: String,
-      // Not required - users can sign up with Google (no password) or email/password
+      required: true,
     },
     name: {
       type: String,
       required: true,
     },
-    picture: {
-      type: String,
-    },
+
     emailVerified: {
       type: Boolean,
       default: false,
