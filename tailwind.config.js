@@ -62,6 +62,8 @@ export default {
         'slide-up': 'slideUp 0.4s ease-out',
         'glow-pulse': 'glowPulse 2s ease-in-out infinite',
         'float': 'float 3s ease-in-out infinite',
+        'float-delayed': 'float 3s ease-in-out 1.5s infinite',
+        'float-slow': 'float 5s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {

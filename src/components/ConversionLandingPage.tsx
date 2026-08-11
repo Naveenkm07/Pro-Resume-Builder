@@ -94,62 +94,39 @@ const ConversionLandingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 shadow-2xl">
-              <div className="bg-white rounded-lg shadow-xl p-8 transform rotate-1 hover:rotate-0 transition-transform duration-300">
-                <div className="space-y-4">
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-2 bg-gray-100 rounded w-2/3 mt-6"></div>
-                  <div className="h-2 bg-gray-100 rounded w-full"></div>
-                  <div className="h-2 bg-gray-100 rounded w-5/6"></div>
-                </div>
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="h-20 bg-gray-100 rounded"></div>
-                    <div className="h-20 bg-gray-100 rounded"></div>
-                  </div>
-                </div>
+          <div className="relative mt-12 lg:mt-0" style={{ perspective: '1000px' }}>
+            {/* Background glowing orb */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-500/20 rounded-full blur-[100px] animate-glow-pulse pointer-events-none"></div>
+
+            {/* Main 2D Illustration */}
+            <div className="relative rounded-2xl shadow-2xl overflow-hidden border border-gray-100 transform hover:scale-[1.02] transition-transform duration-500 bg-white">
+              <img src="/hero_resume_2d.png" alt="Professional Resume Preview" className="w-full h-auto object-cover" />
+            </div>
+
+            {/* Floating Badges */}
+            <div className="absolute -top-6 -left-8 bg-white/90 backdrop-blur-md border border-white/50 rounded-xl shadow-xl p-4 flex items-center gap-3 animate-float-delayed z-10">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shadow-inner">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 font-medium">ATS Score</div>
+                <div className="text-lg font-bold text-gray-900">98/100</div>
               </div>
             </div>
-            <div className="absolute -bottom-4 -right-4 bg-white rounded-lg shadow-lg p-4 w-36 border-2 border-blue-100">
-              <div className="text-xs text-gray-500 mb-1 font-medium">A4 Format</div>
-              <div className="text-sm font-bold text-gray-900">Print Ready</div>
+
+            <div className="absolute -bottom-8 -right-8 bg-white/90 backdrop-blur-md border border-white/50 rounded-xl shadow-xl p-4 flex items-center gap-3 animate-float z-10">
+               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shadow-inner">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 font-medium">AI Optimized</div>
+                <div className="text-sm font-bold text-gray-900">Perfect Match</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust Signals */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="text-gray-600 font-medium text-lg mb-8">
-              Trusted by students & professionals worldwide
-            </p>
-            
-            <div className="flex items-center justify-center gap-8 mb-10 flex-wrap opacity-60">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 w-32 bg-gray-200 rounded flex items-center justify-center">
-                  <span className="text-xs text-gray-500 font-medium">Company {i}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-center gap-3">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <svg key={i} className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="text-gray-800 font-bold text-lg ml-2">4.8</span>
-              <span className="text-gray-500 text-sm ml-1">from 2,500+ reviews</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* How It Works */}
       <section className="max-w-7xl mx-auto px-6 py-24">
@@ -257,55 +234,70 @@ const ConversionLandingPage: React.FC = () => {
       </section>
 
       {/* Template Showcase */}
-      <section className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+      <section className="relative max-w-7xl mx-auto px-6 py-32">
+        {/* Ambient background elements */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-blue-100/40 to-purple-100/40 rounded-full blur-3xl -z-10 opacity-70 animate-pulse" style={{ animationDuration: '8s' }}></div>
+        
+        <div className="text-center mb-20 relative z-10">
+          <h2 className="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-700 mb-6">
             Choose Your Template
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Professional designs that make you stand out
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto font-medium">
+            Professional designs crafted to make you stand out from the crowd
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-10 relative z-10">
           {[
             {
               name: "Simple",
               description: "Clean and minimalist design perfect for any industry",
-              color: "from-blue-500 to-blue-600",
+              color: "from-blue-500 to-cyan-400",
+              shadow: "group-hover:shadow-cyan-500/25",
+              border: "group-hover:border-cyan-200",
+              image: "/simple_resume_3d.png"
             },
             {
               name: "Professional",
               description: "Traditional layout with modern touches for corporate roles",
-              color: "from-indigo-500 to-indigo-600",
+              color: "from-indigo-600 to-blue-500",
+              shadow: "group-hover:shadow-indigo-500/25",
+              border: "group-hover:border-indigo-200",
+              image: "/professional_resume_3d.png"
             },
             {
               name: "Creative",
               description: "Bold design for creative professionals and designers",
-              color: "from-purple-500 to-purple-600",
+              color: "from-purple-600 to-pink-500",
+              shadow: "group-hover:shadow-purple-500/25",
+              border: "group-hover:border-purple-200",
+              image: "/creative_resume_3d.png"
             },
           ].map((template, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
+              className={`group bg-white rounded-2xl border border-gray-100 overflow-hidden transition-all duration-500 transform hover:-translate-y-3 hover:shadow-2xl ${template.shadow} ${template.border} flex flex-col`}
             >
-              <div className="aspect-[210/297] bg-gradient-to-br from-gray-50 to-gray-100 p-6 relative">
-                <div className="bg-white rounded shadow-sm h-full p-4">
-                  <div className="space-y-2">
-                    <div className={`h-3 bg-gradient-to-r ${template.color} rounded w-2/3`}></div>
-                    <div className="h-2 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-2 bg-gray-200 rounded w-3/4 mt-4"></div>
-                    <div className="h-2 bg-gray-200 rounded w-full"></div>
-                    <div className="h-2 bg-gray-200 rounded w-5/6"></div>
-                  </div>
+              <div className="aspect-[210/297] bg-gray-50/50 p-6 relative overflow-hidden flex-shrink-0">
+                {/* Decorative gradient blob inside template container */}
+                <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${template.color} rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500`}></div>
+                
+                <div className="h-full relative z-10 flex flex-col transform transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2">
+                  <img 
+                    src={template.image} 
+                    alt={`${template.name} Template 3D`} 
+                    className="w-full h-full object-cover rounded-xl shadow-lg border border-white/20"
+                  />
                 </div>
-                <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm border border-gray-200">
+                
+                <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold text-gray-600 tracking-wider uppercase shadow-sm border border-white z-20">
                   A4 Format
                 </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{template.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">
+              
+              <div className="p-8 flex flex-col flex-grow bg-white relative z-20">
+                <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 transition-colors duration-300">{template.name}</h3>
+                <p className="text-gray-600 text-sm mb-6 flex-grow leading-relaxed">
                   {template.description}
                 </p>
                 <button
@@ -313,9 +305,9 @@ const ConversionLandingPage: React.FC = () => {
                     setIsSignUp(true);
                     setShowAuthModal(true);
                   }}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  className={`w-full px-5 py-3.5 bg-gradient-to-r ${template.color} text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all duration-300 transform group-hover:scale-[1.02] active:scale-95`}
                 >
-                  Use This Template
+                  Use {template.name}
                 </button>
               </div>
             </div>
@@ -346,53 +338,68 @@ const ConversionLandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-16">
+      <footer className="bg-[#0B1120] text-gray-400 py-16 border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                   <span className="text-white font-bold text-sm">RB</span>
                 </div>
-                <span className="text-white font-semibold">Resume Builder Pro</span>
+                <span className="text-white font-semibold text-lg tracking-tight">Resume Builder Pro</span>
               </div>
-              <p className="text-sm leading-relaxed">
-                AI-powered resume builder for modern job seekers.
+              <p className="text-sm leading-relaxed mb-6 text-gray-400 max-w-xs">
+                Build a professional, ATS-friendly resume in minutes. Stand out from the crowd and land your dream job faster.
               </p>
+              {/* Social Icons */}
+              <div className="flex items-center gap-4">
+                <a href="#" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
+                </a>
+                <a href="#" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                <a href="#" className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+              </div>
             </div>
             
             <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/auth" className="hover:text-white transition-colors">Features</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">Templates</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">Pricing</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">FAQ</Link></li>
+              <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Product</h4>
+              <ul className="space-y-4 text-sm">
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Features</Link></li>
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">FAQ</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="text-white font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/auth" className="hover:text-white transition-colors">About</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">Blog</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">Careers</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">Contact</Link></li>
+              <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Resources</h4>
+              <ul className="space-y-4 text-sm">
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Resume Examples</Link></li>
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Career Advice</Link></li>
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">How to Write a Resume</Link></li>
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Interview Tips</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="text-white font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/auth" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><Link to="/auth" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+              <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Legal & Support</h4>
+              <ul className="space-y-4 text-sm">
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Privacy Policy</Link></li>
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Terms of Service</Link></li>
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Cookie Policy</Link></li>
+                <li><Link to="/auth" className="text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all duration-200">Contact Us</Link></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2024 Resume Builder Pro. All rights reserved.</p>
+          <div className="border-t border-gray-800/80 pt-8 mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+            <p>&copy; {new Date().getFullYear()} Resume Builder Pro. All rights reserved.</p>
+            <div className="flex items-center gap-6">
+              <span className="hover:text-gray-300 cursor-pointer transition-colors">English (US)</span>
+              <span className="hover:text-gray-300 cursor-pointer transition-colors">USD ($)</span>
+            </div>
           </div>
         </div>
       </footer>
