@@ -1,18 +1,9 @@
 import { Router } from 'express';
+import { Op } from 'sequelize';
 import Resume from '../models/Resume';
-// Middleware is applied in server.ts, so we don't strictly need it here unless we use it per-route.
-// Removing unused import to clean up lint error.
 
 const router = Router();
 
-// Middleware to ensure authentication
-// If you don't have this middleware file, we will create it or use a check inside the route.
-// For now, I will assume we might need to inline the check or create the middleware.
-// Let's first check if 'authenticateToken' acts as a middleware.
-// Given previous view of auth.ts, it handled logic but maybe not middleware.
-// I'll create a simple middleware inline if needed, but for now let's assume standard pattern.
-
-// GET /api/resume - Get all resumes for user (or just the latest one)
 router.get('/', async (req: any, res) => {
     try {
         const userId = req.user?.userId;
@@ -21,23 +12,28 @@ router.get('/', async (req: any, res) => {
         const versionName = typeof req.query?.versionName === 'string' ? req.query.versionName.trim() : '';
 
         if (versionName) {
-            const query =
+            const whereClause =
                 versionName === 'Base'
-                    ? { user: userId, $or: [{ versionName: 'Base' }, { versionName: { $exists: false } }] }
+                    ? { user: userId, [Op.or]: [{ versionName: 'Base' }, { versionName: null }] }
                     : { user: userId, versionName };
-            const resume = await Resume.findOne(query).sort({ updatedAt: -1 });
+            const resume = await Resume.findOne({ 
+                where: whereClause,
+                order: [['updatedAt', 'DESC']]
+            });
             if (!resume) {
                 return res.json(null);
             }
-            const obj = resume.toObject();
+            const obj = resume.toJSON();
             if (!obj.versionName) obj.versionName = 'Base';
             return res.json(obj);
         }
 
-        // For this app, we'll sort by updated at and get the latest
-        const resumes = await Resume.find({ user: userId }).sort({ updatedAt: -1 });
+        const resumes = await Resume.findAll({ 
+            where: { user: userId },
+            order: [['updatedAt', 'DESC']]
+        });
         const normalized = resumes.map((r) => {
-            const obj = r.toObject();
+            const obj = r.toJSON();
             if (!obj.versionName) obj.versionName = 'Base';
             return obj;
         });
@@ -48,13 +44,12 @@ router.get('/', async (req: any, res) => {
     }
 });
 
-// GET /api/resume/:id - Get specific resume
 router.get('/:id', async (req: any, res) => {
     try {
         const userId = req.user?.userId;
         if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const resume = await Resume.findOne({ _id: req.params.id, user: userId });
+        const resume = await Resume.findOne({ where: { id: req.params.id, user: userId } });
         if (!resume) {
             return res.status(404).json({ error: 'Resume not found' });
         }
@@ -64,7 +59,6 @@ router.get('/:id', async (req: any, res) => {
     }
 });
 
-// POST /api/resume - Create or Update (Upsert behavior for simplicity of single resume app)
 router.post('/', async (req: any, res) => {
     try {
         const userId = req.user?.userId;
@@ -85,16 +79,14 @@ router.post('/', async (req: any, res) => {
 
         const versionName = typeof rawVersionName === 'string' && rawVersionName.trim() ? rawVersionName.trim() : 'Base';
 
-        const findQuery =
+        const whereClause =
             versionName === 'Base'
-                ? { user: userId, $or: [{ versionName: 'Base' }, { versionName: { $exists: false } }] }
+                ? { user: userId, [Op.or]: [{ versionName: 'Base' }, { versionName: null }] }
                 : { user: userId, versionName };
 
-        // Check if user already has this version, if so update it
-        let resume = await Resume.findOne(findQuery);
+        let resume = await Resume.findOne({ where: whereClause });
 
         if (resume) {
-            // Update existing
             resume.versionName = versionName;
             resume.sectionOrder = Array.isArray(sectionOrder) ? sectionOrder : resume.sectionOrder;
             resume.name = name;
@@ -107,11 +99,10 @@ router.post('/', async (req: any, res) => {
             resume.certifications = Array.isArray(certifications) ? certifications : resume.certifications;
             await resume.save();
         } else {
-            // Create new
-            resume = new Resume({
+            resume = await Resume.create({
                 user: userId,
                 versionName,
-                sectionOrder: Array.isArray(sectionOrder) ? sectionOrder : undefined,
+                sectionOrder: Array.isArray(sectionOrder) ? sectionOrder : [],
                 name,
                 contact,
                 summary,
@@ -121,10 +112,9 @@ router.post('/', async (req: any, res) => {
                 projects,
                 certifications: Array.isArray(certifications) ? certifications : [],
             });
-            await resume.save();
         }
 
-        const obj = resume.toObject();
+        const obj = resume.toJSON();
         if (!obj.versionName) obj.versionName = 'Base';
         res.json(obj);
     } catch (err) {
@@ -133,7 +123,6 @@ router.post('/', async (req: any, res) => {
     }
 });
 
-// DELETE /api/resume?versionName=... - Delete a specific resume version
 router.delete('/', async (req: any, res) => {
     try {
         const userId = req.user?.userId;
@@ -145,13 +134,13 @@ router.delete('/', async (req: any, res) => {
         }
 
         const versionName = versionNameRaw;
-        const query =
+        const whereClause =
             versionName === 'Base'
-                ? { user: userId, $or: [{ versionName: 'Base' }, { versionName: { $exists: false } }] }
+                ? { user: userId, [Op.or]: [{ versionName: 'Base' }, { versionName: null }] }
                 : { user: userId, versionName };
 
-        const deleted = await Resume.findOneAndDelete(query);
-        if (!deleted) {
+        const deletedCount = await Resume.destroy({ where: whereClause });
+        if (deletedCount === 0) {
             return res.status(404).json({ error: 'Resume version not found' });
         }
 

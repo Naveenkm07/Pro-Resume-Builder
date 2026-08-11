@@ -1,93 +1,59 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../db';
+import User from './User';
 
-export interface IResume extends Document {
-    user: mongoose.Types.ObjectId;
-    versionName: string;
-    sectionOrder?: string[];
-    name: string;
-    contact: string;
-    summary: string;
-    skills: string[];
-    experience: Array<{
-        title: string;
-        company: string;
-        desc: string;
-        from: string;
-        to: string;
-    }>;
-    education: Array<{
-        degree: string;
-        college: string;
-        year: string;
-    }>;
-    projects: Array<{
-        name: string;
-        description: string;
-        techStack?: string;
-        link?: string;
-    }>;
-    certifications?: Array<{
-        name: string;
-        issuer?: string;
-        date?: string;
-        credentialId?: string;
-        url?: string;
-    }>;
-    createdAt: Date;
-    updatedAt: Date;
+export class Resume extends Model {
+  public id!: string;
+  public user!: string;
+  public versionName!: string;
+  public sectionOrder!: string[];
+  public name!: string;
+  public contact!: string;
+  public summary!: string;
+  public skills!: string[];
+  public experience!: any[];
+  public education!: any[];
+  public projects!: any[];
+  public certifications!: any[];
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
-const ResumeSchema: Schema = new Schema(
-    {
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true,
-            index: true,
-        },
-        versionName: { type: String, default: 'Base' },
-        sectionOrder: [{ type: String }],
-        name: { type: String, required: true, default: '' },
-        contact: { type: String, default: '' },
-        summary: { type: String, default: '' },
-        skills: [{ type: String }],
-        experience: [
-            {
-                title: { type: String, default: '' },
-                company: { type: String, default: '' },
-                desc: { type: String, default: '' },
-                from: { type: String, default: '' },
-                to: { type: String, default: '' },
-            },
-        ],
-        education: [
-            {
-                degree: { type: String, default: '' },
-                college: { type: String, default: '' },
-                year: { type: String, default: '' },
-            },
-        ],
-        projects: [
-            {
-                name: { type: String, default: '' },
-                description: { type: String, default: '' },
-                techStack: { type: String, default: '' },
-                link: { type: String, default: '' },
-            },
-        ],
-        certifications: [
-            {
-                name: { type: String, default: '' },
-                issuer: { type: String, default: '' },
-                date: { type: String, default: '' },
-                credentialId: { type: String, default: '' },
-                url: { type: String, default: '' },
-            },
-        ],
+Resume.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
     },
-    {
-        timestamps: true,
-    }
+    user: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: User,
+        key: 'id',
+      }
+    },
+    versionName: { type: DataTypes.STRING, defaultValue: 'Base' },
+    sectionOrder: { type: DataTypes.JSON, defaultValue: [] },
+    name: { type: DataTypes.STRING, allowNull: false, defaultValue: '' },
+    contact: { type: DataTypes.STRING, defaultValue: '' },
+    summary: { type: DataTypes.TEXT, defaultValue: '' },
+    skills: { type: DataTypes.JSON, defaultValue: [] },
+    experience: { type: DataTypes.JSON, defaultValue: [] },
+    education: { type: DataTypes.JSON, defaultValue: [] },
+    projects: { type: DataTypes.JSON, defaultValue: [] },
+    certifications: { type: DataTypes.JSON, defaultValue: [] },
+  },
+  {
+    sequelize,
+    tableName: 'resumes',
+    timestamps: true,
+  }
 );
 
-export default mongoose.model<IResume>('Resume', ResumeSchema);
+// Define Associations
+User.hasMany(Resume, { foreignKey: 'user', onDelete: 'CASCADE' });
+Resume.belongsTo(User, { foreignKey: 'user' });
+
+export default Resume;
