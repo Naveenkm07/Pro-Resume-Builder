@@ -9,20 +9,7 @@ const pdfParse = require("pdf-parse") as (data: Buffer | Uint8Array, options?: a
 
 const router = Router();
 
-const uploadsDir = path.join(process.cwd(), "uploads");
-
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    cb(null, uploadsDir);
-  },
-  filename: (_, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    cb(null, `${unique}${ext}`);
-  },
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 const fileSchema = z.object({
@@ -314,21 +301,20 @@ const extractResumeDataFromText = (text: string): ResumeData => {
   };
 };
 
-const parsePdfFile = async (filePath: string): Promise<string> => {
-  const buffer = await fs.promises.readFile(filePath);
+const parsePdfFile = async (buffer: Buffer): Promise<string> => {
   const result = await pdfParse(buffer as any);
   return result.text ?? "";
 };
 
-const parseDocxFile = async (filePath: string): Promise<string> => {
-  const result = await mammoth.extractRawText({ path: filePath });
+const parseDocxFile = async (buffer: Buffer): Promise<string> => {
+  const result = await mammoth.extractRawText({ buffer } as any);
   return result.value ?? "";
 };
 
-const parseTextFile = async (filePath: string, ext: string): Promise<string> => {
+const parseTextFile = async (buffer: Buffer, ext: string): Promise<string> => {
   let raw = "";
   try {
-    raw = await fs.promises.readFile(filePath, "utf8");
+    raw = buffer.toString("utf8");
   } catch {
     return "";
   }
@@ -379,23 +365,17 @@ router.post("/", upload.single("resume"), async (req, res) => {
 
   const validation = fileSchema.safeParse({ mimetype: file.mimetype });
   if (!validation.success) {
-    // clean up saved invalid file
-    try {
-      fs.unlinkSync(file.path);
-    } catch {
-      // ignore
-    }
     return res.status(400).json({ error: "Invalid file type. Allowed types: PDF, DOC, DOCX, HTML, RTF, TXT." });
   }
 
   try {
     let text = "";
     if (isPdf) {
-      text = await parsePdfFile(file.path);
+      text = await parsePdfFile(file.buffer);
     } else if (isDocx) {
-      text = await parseDocxFile(file.path);
+      text = await parseDocxFile(file.buffer);
     } else if (isText) {
-      text = await parseTextFile(file.path, ext);
+      text = await parseTextFile(file.buffer, ext);
     }
 
     let resume: ResumeData;
@@ -416,11 +396,6 @@ router.post("/", upload.single("resume"), async (req, res) => {
       resume = extractResumeDataFromText(text);
     }
 
-    // Clean up the uploaded file asynchronously
-    fs.unlink(file.path, () => {
-      // ignore errors
-    });
-
     return res.json({
       ...resume,
       extractedText: text,
@@ -440,11 +415,6 @@ router.post("/", upload.single("resume"), async (req, res) => {
       education: [],
       projects: [],
     };
-
-    // Best-effort cleanup
-    fs.unlink(file.path, () => {
-      // ignore errors
-    });
 
     // Return fallback instead of HTTP 500 so the UI can still proceed
     return res.json({
