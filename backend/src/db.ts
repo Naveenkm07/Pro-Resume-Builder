@@ -1,12 +1,15 @@
 import { Sequelize } from 'sequelize';
-import path from 'path';
 
-const dbPath = path.resolve(__dirname, '../../database.sqlite');
-
-export const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: dbPath,
+export const sequelize = new Sequelize(process.env.POSTGRES_URL || '', {
+  dialect: 'postgres',
+  dialectModule: require('pg'),
   logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  }
 });
 
 export const connectToDatabase = async () => {

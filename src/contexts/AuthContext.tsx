@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AuthService, { User } from '../services/auth';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-react';
+
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  avatar?: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -11,68 +18,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isLoaded, isSignedIn, signOut } = useClerkAuth();
+  const { user: clerkUser } = useClerkUser();
 
-  useEffect(() => {
-    // Check if user is already authenticated
-    checkAuth();
-    
-    // Listen for storage changes (when user logs in from another tab)
-    const handleStorageChange = () => {
-      checkAuth();
-    };
-    
-    // Listen for auth updates (when user logs in/registers in same tab)
-    const handleAuthUpdate = () => {
-      checkAuth();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('authUpdate', handleAuthUpdate);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('authUpdate', handleAuthUpdate);
-    };
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      // First check localStorage
-      const storedUser = AuthService.getUser();
-      if (storedUser) {
-        setUser(storedUser);
-      }
-
-      // Verify token with backend
-      const currentUser = await AuthService.getCurrentUser();
-      setUser(currentUser);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Public method to refresh auth state (called after login/register)
-  const refreshAuth = async () => {
-    await checkAuth();
-  };
-
-  const signOut = () => {
-    AuthService.logout();
-    setUser(null);
-  };
+  const user: User | null = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress || '',
+    name: clerkUser.fullName || '',
+    avatar: clerkUser.imageUrl,
+  } : null;
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        loading,
+        loading: !isLoaded,
         signOut,
-        isAuthenticated: !!user,
+        isAuthenticated: !!isSignedIn,
       }}
     >
       {children}

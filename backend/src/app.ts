@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import authRoutes from './routes/auth';
 import uploadRoutes from './routes/upload';
 import resumeRoutes from './routes/resume';
 import brandAnalyzerRoutes from './routes/brand-analyzer';
@@ -71,7 +70,7 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
+// Authentication is handled entirely by Clerk in the frontend and validated via middleware for these routes
 app.use('/api/upload', uploadRoutes); // Upload might be public or protected, leaving as is for now
 app.use('/api/resume', authenticate, resumeRoutes);
 app.use('/api/brand-analyzer', brandAnalyzerRoutes);

@@ -3,9 +3,22 @@ import { ResumeData } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+// Add Clerk to window
+declare global {
+    interface Window {
+        Clerk?: any;
+    }
+}
+
 // Helper to get headers
-const getAuthHeaders = () => {
-    const token = localStorage.getItem('authToken');
+const getAuthHeaders = async () => {
+    let token = null;
+    if (window.Clerk && window.Clerk.session) {
+        token = await window.Clerk.session.getToken();
+    } else {
+        token = localStorage.getItem('authToken');
+    }
+    
     return {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -15,8 +28,9 @@ const getAuthHeaders = () => {
 export const ApiService = {
     saveResume: async (resumeData: ResumeData) => {
         try {
+            const headers = await getAuthHeaders();
             const response = await axios.post(`${API_URL}/api/resume`, resumeData, {
-                headers: getAuthHeaders(),
+                headers,
             });
             return response.data;
         } catch (error) {
@@ -30,8 +44,9 @@ export const ApiService = {
             const url = versionName
                 ? `${API_URL}/api/resume?versionName=${encodeURIComponent(versionName)}`
                 : `${API_URL}/api/resume`;
+            const headers = await getAuthHeaders();
             const response = await axios.get(url, {
-                headers: getAuthHeaders(),
+                headers,
             });
             if (Array.isArray(response.data) && response.data.length > 0) {
                 return response.data[0];
@@ -45,8 +60,9 @@ export const ApiService = {
 
     getResumes: async () => {
         try {
+            const headers = await getAuthHeaders();
             const response = await axios.get(`${API_URL}/api/resume`, {
-                headers: getAuthHeaders(),
+                headers,
             });
             return Array.isArray(response.data) ? response.data : [];
         } catch (error) {
@@ -57,9 +73,10 @@ export const ApiService = {
 
     deleteResumeVersion: async (versionName: string) => {
         try {
+            const headers = await getAuthHeaders();
             const response = await axios.delete(`${API_URL}/api/resume`, {
                 params: { versionName },
-                headers: getAuthHeaders(),
+                headers,
             });
             return response.data;
         } catch (error) {
