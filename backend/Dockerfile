@@ -1,8 +1,5 @@
 # Backend API Dockerfile - Node.js + Express + TypeScript
-FROM node:20-alpine AS deps
-
-# Install build essentials for Alpine (needed for native modules)
-RUN apk add --no-cache python3 make g++
+FROM node:20-slim AS deps
 
 WORKDIR /app
 
@@ -12,7 +9,7 @@ COPY package.json package-lock.json* ./
 # Install dependencies
 RUN npm install
 
-FROM node:20-alpine AS build
+FROM node:20-slim AS build
 
 WORKDIR /app
 
@@ -26,14 +23,13 @@ COPY src ./src
 # Build/compile TypeScript to JavaScript
 RUN npm run build
 
-# Install production dependencies only, with build tools
-FROM node:20-alpine AS prod-deps
-RUN apk add --no-cache python3 make g++
+# Install production dependencies only
+FROM node:20-slim AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
