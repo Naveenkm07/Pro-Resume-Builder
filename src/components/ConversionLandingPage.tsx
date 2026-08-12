@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import EmailSignIn from './EmailSignIn';
-import EmailSignUp from './EmailSignUp';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { SignInButton, SignUpButton } from '@clerk/clerk-react';
 
 const ConversionLandingPage: React.FC = () => {
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
 
   return (
     <div className="min-h-screen bg-white">
@@ -20,24 +17,16 @@ const ConversionLandingPage: React.FC = () => {
               <span className="text-xl font-semibold text-gray-900">Resume Builder Pro</span>
             </div>
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  setIsSignUp(false);
-                  setShowAuthModal(true);
-                }}
-                className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setIsSignUp(true);
-                  setShowAuthModal(true);
-                }}
-                className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                Get Started
-              </button>
+              <SignInButton mode="modal">
+                <button className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors">
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm">
+                  Get Started
+                </button>
+              </SignUpButton>
             </div>
           </div>
         </div>
@@ -58,24 +47,16 @@ const ConversionLandingPage: React.FC = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => {
-                  setIsSignUp(true);
-                  setShowAuthModal(true);
-                }}
-                className="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                Build My Resume
-              </button>
-              <button
-                onClick={() => {
-                  setIsSignUp(false);
-                  setShowAuthModal(true);
-                }}
-                className="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold text-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
-              >
-                Upload Existing Resume
-              </button>
+              <SignUpButton mode="modal">
+                <button className="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                  Build My Resume
+                </button>
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <button className="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold text-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200">
+                  Upload Existing Resume
+                </button>
+              </SignInButton>
             </div>
 
             <div className="flex items-center gap-6 text-sm text-gray-500 pt-4">
@@ -300,15 +281,11 @@ const ConversionLandingPage: React.FC = () => {
                 <p className="text-gray-600 text-sm mb-6 flex-grow leading-relaxed">
                   {template.description}
                 </p>
-                <button
-                  onClick={() => {
-                    setIsSignUp(true);
-                    setShowAuthModal(true);
-                  }}
-                  className={`w-full px-5 py-3.5 bg-gradient-to-r ${template.color} text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all duration-300 transform group-hover:scale-[1.02] active:scale-95`}
-                >
-                  Use {template.name}
-                </button>
+                <SignUpButton mode="modal">
+                  <button className={`w-full px-5 py-3.5 bg-gradient-to-r ${template.color} text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all duration-300 transform group-hover:scale-[1.02] active:scale-95`}>
+                    Use {template.name}
+                  </button>
+                </SignUpButton>
               </div>
             </div>
           ))}
@@ -324,15 +301,11 @@ const ConversionLandingPage: React.FC = () => {
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
             Join thousands of professionals who have landed their dream jobs with our AI-powered resume builder.
           </p>
-          <button
-            onClick={() => {
-              setIsSignUp(true);
-              setShowAuthModal(true);
-            }}
-            className="px-10 py-5 bg-white text-blue-600 rounded-lg font-bold text-lg hover:bg-gray-50 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105"
-          >
-            Create My Resume Now
-          </button>
+          <SignUpButton mode="modal">
+            <button className="px-10 py-5 bg-white text-blue-600 rounded-lg font-bold text-lg hover:bg-gray-50 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105">
+              Create My Resume Now
+            </button>
+          </SignUpButton>
           <p className="text-blue-100 text-sm mt-6">No credit card required • Free to start</p>
         </div>
       </section>
@@ -404,60 +377,11 @@ const ConversionLandingPage: React.FC = () => {
         </div>
       </footer>
 
-      {/* Auth Modal */}
-      {showAuthModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowAuthModal(false);
-            }
-          }}
-        >
-          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {isSignUp ? 'Create Account' : 'Sign In'}
-                </h2>
-                <button
-                  onClick={() => setShowAuthModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
 
-              {/* Email/Password Auth */}
-              <div className="mb-6">
-                {isSignUp ? (
-                  <EmailSignUp onSuccess={() => setShowAuthModal(false)} />
-                ) : (
-                  <EmailSignIn onSuccess={() => setShowAuthModal(false)} />
-                )}
-              </div>
-
-              {/* Toggle Sign Up/Sign In */}
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                  <button
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="text-blue-600 hover:text-blue-700 font-semibold"
-                  >
-                    {isSignUp ? 'Sign In' : 'Sign Up'}
-                  </button>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default ConversionLandingPage;
+
 
