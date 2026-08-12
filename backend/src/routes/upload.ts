@@ -1,5 +1,5 @@
 import { Router } from "express";
-import multer from "multer";
+import formidable from "formidable";
 import fs from "fs";
 import path from "path";
 import * as mammoth from "mammoth";
@@ -9,8 +9,6 @@ const PDFParser = require("pdf2json");
 
 const router = Router();
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
 
 const fileSchema = z.object({
   mimetype: z.enum([
@@ -351,42 +349,59 @@ const parseTextFile = async (buffer: Buffer, ext: string): Promise<string> => {
   return raw;
 };
 
-router.post("/", upload.single("resume"), async (req, res) => {
-  const file = req.file;
+router.post("/", async (req, res) => {
+  const form = formidable({});
+  
+  try {
+    const [fields, files] = await form.parse(req);
+    const resumeFile = Array.isArray(files.resume) ? files.resume[0] : files.resume;
 
-  if (!file) {
-    return res.status(400).json({ error: "File is required under key 'resume'." });
-  }
+    if (!resumeFile) {
+      return res.status(400).json({ error: "File is required under key 'resume'." });
+    }
 
-  const ext = path.extname(file.originalname).toLowerCase();
-  const mime = file.mimetype;
-  const isPdf = mime === "application/pdf" || mime === "application/x-pdf" || ext === ".pdf";
-  const isDocx =
-    mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    ext === ".docx";
-  const isText =
-    mime === "text/plain" ||
-    mime === "text/html" ||
-    mime === "text/rtf" ||
-    ext === ".txt" ||
-    ext === ".html" ||
-    ext === ".htm" ||
-    ext === ".rtf";
+    const originalname = resumeFile.originalFilename || "resume";
+    const mimetype = resumeFile.mimetype || "application/octet-stream";
+    const ext = path.extname(originalname).toLowerCase();
 
-  const validation = fileSchema.safeParse({ mimetype: file.mimetype });
-  if (!validation.success) {
-    return res.status(400).json({ error: "Invalid file type. Allowed types: PDF, DOC, DOCX, HTML, RTF, TXT." });
-  }
+    // Formidable writes the file to a temporary location (/tmp in Vercel)
+    const filepath = resumeFile.filepath;
+    
+    // Read the file from the temp path into a buffer so we can parse it
+    const buffer = await fs.promises.readFile(filepath);
+
+    const isPdf = mimetype === "application/pdf" || mimetype === "application/x-pdf" || ext === ".pdf";
+    const isDocx =
+      mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      ext === ".docx";
+    const isText =
+      mimetype === "text/plain" ||
+      mimetype === "text/html" ||
+      mimetype === "text/rtf" ||
+      ext === ".txt" ||
+      ext === ".html" ||
+      ext === ".htm" ||
+      ext === ".rtf";
+
+    const validation = fileSchema.safeParse({ mimetype: mimetype });
+    if (!validation.success) {
+      // Clean up temp file asynchronously
+      fs.promises.unlink(filepath).catch(console.error);
+      return res.status(400).json({ error: "Invalid file type. Allowed types: PDF, DOC, DOCX, HTML, RTF, TXT." });
+    }
 
   try {
     let text = "";
     if (isPdf) {
-      text = await parsePdfFile(file.buffer);
+      text = await parsePdfFile(buffer);
     } else if (isDocx) {
-      text = await parseDocxFile(file.buffer);
+      text = await parseDocxFile(buffer);
     } else if (isText) {
-      text = await parseTextFile(file.buffer, ext);
+      text = await parseTextFile(buffer, ext);
     }
+
+    // Clean up the formidable temp file immediately after reading it into memory
+    fs.promises.unlink(filepath).catch(console.error);
 
     let resume: ResumeData;
     if (!text.trim()) {
@@ -409,14 +424,15 @@ router.post("/", upload.single("resume"), async (req, res) => {
     return res.json({
       ...resume,
       extractedText: text,
-      fileName: file.originalname,
-      mimeType: file.mimetype,
+      fileName: originalname,
+      mimeType: mimetype,
     });
   } catch (err) {
     console.error("Local parse error:", err);
-    const baseName = path.basename(file.originalname, path.extname(file.originalname));
+    // Note: We cannot rely on resumeFile being defined here in the outer catch block if formidable parsing failed,
+    // so we provide generic fallbacks.
     const fallback: ResumeData = {
-      name: baseName || "Imported Resume",
+      name: "Imported Resume",
       contact: "",
       summary:
         "Imported resume, but parsing failed. Please fill in your information manually.",
@@ -430,8 +446,8 @@ router.post("/", upload.single("resume"), async (req, res) => {
     return res.json({
       ...fallback,
       extractedText: "",
-      fileName: file.originalname,
-      mimeType: file.mimetype,
+      fileName: "Uploaded Resume",
+      mimeType: "application/octet-stream",
     });
   }
 });
