@@ -11,6 +11,7 @@ type HeaderProps = {
 };
 
 import { useAuth } from "../contexts/AuthContext";
+import { UserButton } from "@clerk/clerk-react";
 
 const Header: React.FC<HeaderProps> = ({ onExport, onAbout, onSave, isSaving, showAbout }) => {
   const { user, signOut } = useAuth();
@@ -46,20 +47,12 @@ const Header: React.FC<HeaderProps> = ({ onExport, onAbout, onSave, isSaving, sh
           <ThemePicker />
           {user && (
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-300 hidden md:inline">
-                {user.name}
-              </span>
               {onSave && (
                 <Button variant="ghost" size="sm" onClick={onSave} disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save"}
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => {
-                signOut();
-                window.location.reload();
-              }}>
-                Sign Out
-              </Button>
+              <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-full ring-2 ring-primary/20 hover:ring-primary/50 transition-all" } }} />
             </div>
           )}
           <Button variant="ghost" size="sm" onClick={onAbout}>
