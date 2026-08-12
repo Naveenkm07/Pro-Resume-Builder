@@ -26,6 +26,13 @@ COPY src ./src
 # Build/compile TypeScript to JavaScript
 RUN npm run build
 
+# Install production dependencies only, with build tools
+FROM node:20-alpine AS prod-deps
+RUN apk add --no-cache python3 make g++
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
+
 FROM node:20-alpine AS runner
 
 WORKDIR /app
@@ -33,8 +40,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
-
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 
 # Create uploads directory
