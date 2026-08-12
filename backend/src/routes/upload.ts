@@ -5,7 +5,7 @@ import path from "path";
 import * as mammoth from "mammoth";
 import { z } from "zod";
 
-const pdfParse = require("pdf-parse") as (data: Buffer | Uint8Array, options?: any) => Promise<any>;
+const PDFParser = require("pdf2json");
 
 const router = Router();
 
@@ -301,9 +301,19 @@ const extractResumeDataFromText = (text: string): ResumeData => {
   };
 };
 
-const parsePdfFile = async (buffer: Buffer): Promise<string> => {
-  const result = await pdfParse(buffer as any);
-  return result.text ?? "";
+const parsePdfFile = (buffer: Buffer): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const pdfParser = new PDFParser(null, 1); // 1 = extract text
+      pdfParser.on("pdfParser_dataError", (errData: any) => reject(errData.parserError));
+      pdfParser.on("pdfParser_dataReady", () => {
+        resolve(pdfParser.getRawTextContent());
+      });
+      pdfParser.parseBuffer(buffer);
+    } catch (err) {
+      reject(err);
+    }
+  });
 };
 
 const parseDocxFile = async (buffer: Buffer): Promise<string> => {
