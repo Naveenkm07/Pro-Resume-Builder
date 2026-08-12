@@ -1,6 +1,8 @@
 import { Sequelize } from 'sequelize';
 
-export const sequelize = new Sequelize(process.env.POSTGRES_URL || '', {
+const dbUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
+
+export const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
   dialectModule: require('pg'),
   logging: false,
