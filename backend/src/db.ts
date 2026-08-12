@@ -17,7 +17,7 @@ export const sequelize = new Sequelize(dbUrl, {
 export const connectToDatabase = async () => {
   try {
     await sequelize.authenticate();
-    await sequelize.sync({ alter: true });
+    await sequelize.sync(); // Removed { alter: true } because it is extremely slow in serverless environments
     console.log('✅ SQLite connected and synced');
     return sequelize;
   } catch (error) {
