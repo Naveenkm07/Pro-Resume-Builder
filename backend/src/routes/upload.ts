@@ -350,6 +350,15 @@ const parseTextFile = async (buffer: Buffer, ext: string): Promise<string> => {
 };
 
 router.post("/", async (req, res) => {
+  // Check if Vercel has already consumed the stream into req.body
+  if (req.body && Buffer.isBuffer(req.body)) {
+    return res.status(400).json({ error: "req.body is a buffer! Vercel pre-parsed the stream." });
+  } else if (req.body && Object.keys(req.body).length > 0) {
+    return res.status(400).json({ error: "req.body is an object! Vercel pre-parsed the stream." });
+  } else if (typeof req.body === 'string') {
+    return res.status(400).json({ error: "req.body is a string! Vercel pre-parsed the stream." });
+  }
+
   const form = formidable({});
   
   try {
