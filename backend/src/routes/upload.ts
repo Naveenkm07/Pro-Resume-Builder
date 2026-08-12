@@ -1,5 +1,4 @@
 import { Router } from "express";
-import formidable from "formidable";
 import fs from "fs";
 import path from "path";
 import * as mammoth from "mammoth";
@@ -350,34 +349,20 @@ const parseTextFile = async (buffer: Buffer, ext: string): Promise<string> => {
 };
 
 router.post("/", async (req, res) => {
-  // Check if Vercel has already consumed the stream into req.body
-  if (req.body && Buffer.isBuffer(req.body)) {
-    return res.status(400).json({ error: "req.body is a buffer! Vercel pre-parsed the stream." });
-  } else if (req.body && Object.keys(req.body).length > 0) {
-    return res.status(400).json({ error: "req.body is an object! Vercel pre-parsed the stream." });
-  } else if (typeof req.body === 'string') {
-    return res.status(400).json({ error: "req.body is a string! Vercel pre-parsed the stream." });
-  }
-
-  const form = formidable({});
-  
   try {
-    const [fields, files] = await form.parse(req);
-    const resumeFile = Array.isArray(files.resume) ? files.resume[0] : files.resume;
+    const { resumeBase64, filename, mimetype: clientMimetype } = req.body;
 
-    if (!resumeFile) {
-      return res.status(400).json({ error: "File is required under key 'resume'." });
+    if (!resumeBase64) {
+      return res.status(400).json({ error: "File data (resumeBase64) is required." });
     }
 
-    const originalname = resumeFile.originalFilename || "resume";
-    const mimetype = resumeFile.mimetype || "application/octet-stream";
-    const ext = path.extname(originalname).toLowerCase();
+    // resumeBase64 looks like "data:application/pdf;base64,JVBERi..."
+    const base64Data = resumeBase64.split(",")[1] || resumeBase64;
+    const buffer = Buffer.from(base64Data, "base64");
 
-    // Formidable writes the file to a temporary location (/tmp in Vercel)
-    const filepath = resumeFile.filepath;
-    
-    // Read the file from the temp path into a buffer so we can parse it
-    const buffer = await fs.promises.readFile(filepath);
+    const originalname = filename || "resume";
+    const mimetype = clientMimetype || "application/octet-stream";
+    const ext = path.extname(originalname).toLowerCase();
 
     const isPdf = mimetype === "application/pdf" || mimetype === "application/x-pdf" || ext === ".pdf";
     const isDocx =
@@ -408,9 +393,6 @@ router.post("/", async (req, res) => {
     } else if (isText) {
       text = await parseTextFile(buffer, ext);
     }
-
-    // Clean up the formidable temp file immediately after reading it into memory
-    fs.promises.unlink(filepath).catch(console.error);
 
     let resume: ResumeData;
     if (!text.trim()) {

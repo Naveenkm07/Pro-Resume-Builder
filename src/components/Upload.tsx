@@ -114,17 +114,30 @@ const Upload: React.FC<UploadProps> = ({ onParsed }) => {
     setReviewData(null);
     setDraftResume(null);
 
-    const formData = new FormData();
-    formData.append("resume", file);
-
-    // Try to POST to /api/upload as required; fall back to mocked JSON.
     try {
+      // Read file as Base64 to bypass Vercel multipart/form-data streaming issues
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // The result is a data URL: "data:application/pdf;base64,JVBERi..."
+          // We just send the whole thing and let the backend parse it.
+          resolve(result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
       const response = await fetch("/api/upload", {
         method: "POST",
-        body: formData,
         headers: {
-          // No Content-Type header needed for FormData
-        }
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          resumeBase64: fileBase64,
+          filename: file.name,
+          mimetype: file.type,
+        }),
       });
 
       if (!response.ok) {
