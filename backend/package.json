@@ -21,6 +21,7 @@
     "formidable": "^3.5.4",
     "jsonwebtoken": "^9.0.3",
     "mammoth": "^1.11.0",
+    "pdf-parse": "^1.1.1",
     "pdf2json": "^4.0.3",
     "pg": "^8.23.0",
     "pg-hstore": "^2.3.4",
@@ -37,6 +38,7 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/ms": "^2.1.0",
     "@types/node": "^22.9.4",
+    "@types/pdf-parse": "^1.1.5",
     "eslint": "^9.17.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"

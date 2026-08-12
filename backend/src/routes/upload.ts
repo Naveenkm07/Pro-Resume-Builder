@@ -4,7 +4,6 @@ import path from "path";
 import * as mammoth from "mammoth";
 import { z } from "zod";
 
-const PDFParser = require("pdf2json");
 
 const router = Router();
 
@@ -298,19 +297,15 @@ const extractResumeDataFromText = (text: string): ResumeData => {
   };
 };
 
-const parsePdfFile = (buffer: Buffer): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    try {
-      const pdfParser = new PDFParser(null, 1); // 1 = extract text
-      pdfParser.on("pdfParser_dataError", (errData: any) => reject(errData.parserError));
-      pdfParser.on("pdfParser_dataReady", () => {
-        resolve(pdfParser.getRawTextContent());
-      });
-      pdfParser.parseBuffer(buffer);
-    } catch (err) {
-      reject(err);
-    }
-  });
+import pdfParse from "pdf-parse";
+
+const parsePdfFile = async (buffer: Buffer): Promise<string> => {
+  try {
+    const data = await pdfParse(buffer);
+    return data.text;
+  } catch (err) {
+    throw err;
+  }
 };
 
 const parseDocxFile = async (buffer: Buffer): Promise<string> => {
@@ -379,12 +374,9 @@ router.post("/", async (req, res) => {
 
     const validation = fileSchema.safeParse({ mimetype: mimetype });
     if (!validation.success) {
-      // Clean up temp file asynchronously
-      fs.promises.unlink(filepath).catch(console.error);
       return res.status(400).json({ error: "Invalid file type. Allowed types: PDF, DOC, DOCX, HTML, RTF, TXT." });
     }
 
-  try {
     let text = "";
     if (isPdf) {
       text = await parsePdfFile(buffer);
@@ -397,7 +389,7 @@ router.post("/", async (req, res) => {
     let resume: ResumeData;
     if (!text.trim()) {
       console.warn("No text extracted from resume; falling back to minimal ResumeData");
-      const baseName = path.basename(file.originalname, path.extname(file.originalname));
+      const baseName = path.basename(originalname, ext);
       resume = {
         name: baseName || "Imported Resume",
         contact: "",
@@ -420,8 +412,6 @@ router.post("/", async (req, res) => {
     });
   } catch (err) {
     console.error("Local parse error:", err);
-    // Note: We cannot rely on resumeFile being defined here in the outer catch block if formidable parsing failed,
-    // so we provide generic fallbacks.
     const fallback: ResumeData = {
       name: "Imported Resume",
       contact: "",
@@ -433,7 +423,6 @@ router.post("/", async (req, res) => {
       projects: [],
     };
 
-    // Return fallback instead of HTTP 500 so the UI can still proceed
     return res.json({
       ...fallback,
       extractedText: "",
