@@ -2,6 +2,7 @@
   "name": "resume-builder-mvp",
   "version": "1.0.1",
   "private": true,
+  "type": "module",
   "workspaces": [
     "backend"
   ],
